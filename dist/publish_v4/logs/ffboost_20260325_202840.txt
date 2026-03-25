@@ -1,0 +1,10 @@
+Status: Modo jogo ja ativo.
+Perfil: Ultra
+CPU: 11,25% -> 12,36%
+RAM: 10,35 GB -> 10,33 GB
+Processos: 102 -> 102
+Encerrados: 0
+Suspensos: 0
+Overlays: 0
+Tempo: 0 ms
+Modo jogo ja esta ativo.

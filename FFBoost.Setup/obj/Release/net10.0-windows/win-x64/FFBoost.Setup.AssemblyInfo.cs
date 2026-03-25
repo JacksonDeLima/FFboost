@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
 [assembly: System.Reflection.AssemblyDescriptionAttribute("Instalador do FF Boost.")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0-gamer+70bf2adfb97ae238c464c9c6ef54c2776e5e47d0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0-gamer+ef244be7c6815ce3f09df88b3cdec7765ddf3119")]
 [assembly: System.Reflection.AssemblyProductAttribute("FF Boost")]
 [assembly: System.Reflection.AssemblyTitleAttribute("FF Boost Setup")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

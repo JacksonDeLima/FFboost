@@ -1,0 +1,111 @@
+{
+  "allowedProcesses": [
+    "HD-Player",
+    "HD-Frontend",
+    "BlueStacks",
+    "Bluestacks",
+    "Discord",
+    "obs64",
+    "medal",
+    "action",
+    "streamlabsobs",
+    "explorer",
+    "dwm",
+    "nvcontainer",
+    "NVIDIA Share"
+  ],
+  "freeFireAllowedProcesses": [
+    "HD-Player",
+    "HD-Frontend",
+    "BlueStacks",
+    "Bluestacks",
+    "Discord",
+    "obs64",
+    "medal",
+    "action",
+    "streamlabsobs",
+    "explorer",
+    "dwm",
+    "nvcontainer",
+    "NVIDIA Share"
+  ],
+  "safeBlacklist": [
+    "chrome",
+    "msedge",
+    "firefox",
+    "opera",
+    "brave",
+    "onedrive",
+    "teams",
+    "spotify"
+  ],
+  "freeFireSafeBlacklist": [
+    "chrome",
+    "msedge",
+    "firefox",
+    "opera",
+    "brave",
+    "onedrive",
+    "teams",
+    "spotify",
+    "adobeipcbroker"
+  ],
+  "strongBlacklist": [
+    "telegram",
+    "whatsapp",
+    "notion",
+    "epicgameslauncher",
+    "steam",
+    "steamwebhelper"
+  ],
+  "freeFireStrongBlacklist": [
+    "telegram",
+    "whatsapp",
+    "notion",
+    "epicgameslauncher",
+    "steam",
+    "steamwebhelper",
+    "galaxyclient",
+    "riotclientservices"
+  ],
+  "ultraBlacklist": [
+    "discordptb",
+    "webex",
+    "zoom",
+    "uplay",
+    "upc",
+    "battle.net"
+  ],
+  "freeFireUltraBlacklist": [
+    "discordptb",
+    "webex",
+    "zoom",
+    "uplay",
+    "upc",
+    "battle.net",
+    "ubisoftconnect",
+    "ea"
+  ],
+  "recordingProcesses": [
+    "obs64",
+    "medal",
+    "action",
+    "streamlabsobs"
+  ],
+  "emulatorProcesses": [
+    "HD-Player",
+    "BlueStacks",
+    "Bluestacks",
+    "HD-Frontend"
+  ],
+  "useHighPerformancePlan": true,
+  "setEmulatorHighPriority": true,
+  "enableTimerResolution": true,
+  "enableAffinityTuning": true,
+  "enableOverlayDetection": true,
+  "enableWatcher": true,
+  "telemetryEnabled": true,
+  "autoOptimizeOnStartup": true,
+  "enableFreeFireMode": false,
+  "selectedProfile": "Seguro"
+}

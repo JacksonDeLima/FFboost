@@ -1,60 +1,58 @@
 {
-  "allowedProcesses": [
-    "HD-Player",
+  "AllowedProcesses": [
     "BlueStacks",
-    "Bluestacks",
     "Discord",
-    "obs64",
-    "explorer",
     "dwm",
+    "explorer",
+    "HD-Player",
     "nvcontainer",
-    "NVIDIA Share"
+    "NVIDIA Share",
+    "obs64"
   ],
-  "safeBlacklist": [
-    "chrome",
-    "msedge",
-    "firefox",
-    "opera",
+  "SafeBlacklist": [
     "brave",
+    "chrome",
+    "firefox",
+    "msedge",
     "onedrive",
-    "teams",
-    "spotify"
+    "opera",
+    "spotify",
+    "teams"
   ],
-  "strongBlacklist": [
-    "telegram",
-    "whatsapp",
-    "notion",
+  "StrongBlacklist": [
     "epicgameslauncher",
+    "notion",
     "steam",
-    "steamwebhelper"
+    "steamwebhelper",
+    "telegram",
+    "whatsapp"
   ],
-  "ultraBlacklist": [
+  "UltraBlacklist": [
+    "battle.net",
     "discordptb",
-    "webex",
-    "zoom",
-    "uplay",
     "upc",
-    "battle.net"
+    "uplay",
+    "webex",
+    "zoom"
   ],
-  "recordingProcesses": [
-    "obs64",
-    "medal",
+  "RecordingProcesses": [
     "action",
+    "medal",
+    "obs64",
     "streamlabsobs"
   ],
-  "emulatorProcesses": [
-    "HD-Player",
+  "EmulatorProcesses": [
     "BlueStacks",
-    "Bluestacks",
-    "HD-Frontend"
+    "HD-Frontend",
+    "HD-Player"
   ],
-  "useHighPerformancePlan": true,
-  "setEmulatorHighPriority": true,
-  "enableTimerResolution": true,
-  "enableAffinityTuning": true,
-  "enableOverlayDetection": true,
-  "enableWatcher": true,
-  "telemetryEnabled": true,
-  "autoOptimizeOnStartup": true,
-  "selectedProfile": "Seguro"
+  "UseHighPerformancePlan": true,
+  "SetEmulatorHighPriority": true,
+  "EnableTimerResolution": true,
+  "EnableAffinityTuning": true,
+  "EnableOverlayDetection": true,
+  "EnableWatcher": true,
+  "TelemetryEnabled": true,
+  "AutoOptimizeOnStartup": true,
+  "SelectedProfile": "Ultra"
 }
