@@ -1,0 +1,36 @@
+{
+  "allowedProcesses": [
+    "HD-Player",
+    "BlueStacks",
+    "Bluestacks",
+    "Discord",
+    "obs64",
+    "explorer",
+    "dwm",
+    "nvcontainer",
+    "NVIDIA Share"
+  ],
+  "safeBlacklist": [
+    "chrome",
+    "msedge",
+    "opera",
+    "firefox",
+    "onedrive",
+    "teams",
+    "steamwebhelper",
+    "adobeipcbroker"
+  ],
+  "recordingProcesses": [
+    "obs64",
+    "medal",
+    "action"
+  ],
+  "emulatorProcesses": [
+    "HD-Player",
+    "BlueStacks",
+    "Bluestacks",
+    "HD-Frontend"
+  ],
+  "useHighPerformancePlan": true,
+  "setEmulatorHighPriority": true
+}

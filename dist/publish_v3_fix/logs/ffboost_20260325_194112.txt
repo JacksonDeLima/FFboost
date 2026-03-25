@@ -1,0 +1,11 @@
+Status: Modo jogo ativado. 0 processo(s) encerrado(s).
+Perfil: Ultra
+CPU: 32,36% -> 40,62%
+RAM: 11,85 GB -> 11,97 GB
+Emulador detectado: HD-Player
+Perfil selecionado: Ultra
+Blacklist ativa: 20 processo(s) configurado(s).
+Prioridade alta aplicada ao emulador.
+Plano de energia de alto desempenho ativado.
+Total encerrado: 0
+Falhas ao encerrar: 0
