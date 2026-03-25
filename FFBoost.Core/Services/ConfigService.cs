@@ -57,9 +57,13 @@ public class ConfigService
     private static void Normalize(AppConfig config)
     {
         config.AllowedProcesses = NormalizeList(config.AllowedProcesses);
+        config.FreeFireAllowedProcesses = NormalizeList(config.FreeFireAllowedProcesses);
         config.SafeBlacklist = NormalizeList(config.SafeBlacklist);
         config.StrongBlacklist = NormalizeList(config.StrongBlacklist);
         config.UltraBlacklist = NormalizeList(config.UltraBlacklist);
+        config.FreeFireSafeBlacklist = NormalizeList(config.FreeFireSafeBlacklist);
+        config.FreeFireStrongBlacklist = NormalizeList(config.FreeFireStrongBlacklist);
+        config.FreeFireUltraBlacklist = NormalizeList(config.FreeFireUltraBlacklist);
         config.RecordingProcesses = NormalizeList(config.RecordingProcesses);
         config.EmulatorProcesses = NormalizeList(config.EmulatorProcesses);
         config.SelectedProfile = string.IsNullOrWhiteSpace(config.SelectedProfile) ? "Seguro" : config.SelectedProfile.Trim();
@@ -82,10 +86,30 @@ public class ConfigService
             AllowedProcesses =
             {
                 "HD-Player",
+                "HD-Frontend",
                 "BlueStacks",
                 "Bluestacks",
                 "Discord",
                 "obs64",
+                "medal",
+                "action",
+                "streamlabsobs",
+                "explorer",
+                "dwm",
+                "nvcontainer",
+                "NVIDIA Share"
+            },
+            FreeFireAllowedProcesses =
+            {
+                "HD-Player",
+                "HD-Frontend",
+                "BlueStacks",
+                "Bluestacks",
+                "Discord",
+                "obs64",
+                "medal",
+                "action",
+                "streamlabsobs",
                 "explorer",
                 "dwm",
                 "nvcontainer",
@@ -102,6 +126,18 @@ public class ConfigService
                 "spotify",
                 "brave"
             },
+            FreeFireSafeBlacklist =
+            {
+                "chrome",
+                "msedge",
+                "opera",
+                "firefox",
+                "onedrive",
+                "teams",
+                "spotify",
+                "brave",
+                "adobeipcbroker"
+            },
             StrongBlacklist =
             {
                 "telegram",
@@ -111,6 +147,17 @@ public class ConfigService
                 "steam",
                 "steamwebhelper"
             },
+            FreeFireStrongBlacklist =
+            {
+                "telegram",
+                "whatsapp",
+                "notion",
+                "epicgameslauncher",
+                "steam",
+                "steamwebhelper",
+                "galaxyclient",
+                "riotclientservices"
+            },
             UltraBlacklist =
             {
                 "discordptb",
@@ -119,6 +166,17 @@ public class ConfigService
                 "uplay",
                 "upc",
                 "battle.net"
+            },
+            FreeFireUltraBlacklist =
+            {
+                "discordptb",
+                "webex",
+                "zoom",
+                "uplay",
+                "upc",
+                "battle.net",
+                "ubisoftconnect",
+                "ea"
             },
             RecordingProcesses =
             {
@@ -136,7 +194,13 @@ public class ConfigService
             },
             UseHighPerformancePlan = true,
             SetEmulatorHighPriority = true,
+            EnableTimerResolution = true,
+            EnableAffinityTuning = true,
+            EnableOverlayDetection = true,
+            EnableWatcher = true,
+            TelemetryEnabled = true,
             AutoOptimizeOnStartup = true,
+            EnableFreeFireMode = false,
             SelectedProfile = "Seguro"
         };
     }

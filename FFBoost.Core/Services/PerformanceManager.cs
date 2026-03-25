@@ -19,6 +19,78 @@ public class PerformanceManager
                     session.ChangedPriorities[process.Id] = process.PriorityClass;
 
                 process.PriorityClass = ProcessPriorityClass.High;
+
+                foreach (ProcessThread thread in process.Threads)
+                {
+                    try
+                    {
+                        thread.PriorityLevel = ThreadPriorityLevel.AboveNormal;
+                    }
+                    catch
+                    {
+                    }
+                }
+            }
+            catch
+            {
+            }
+        }
+    }
+
+    public bool SetEmulatorAffinity(IEnumerable<Process> processes, OptimizationSession session)
+    {
+        var applied = false;
+        var mask = GetPreferredAffinityMask();
+
+        if (mask == IntPtr.Zero)
+            return false;
+
+        foreach (var process in processes)
+        {
+            try
+            {
+                if (process.HasExited)
+                    continue;
+
+                if (!session.ChangedAffinities.ContainsKey(process.Id))
+                    session.ChangedAffinities[process.Id] = process.ProcessorAffinity;
+
+                process.ProcessorAffinity = mask;
+                applied = true;
+            }
+            catch
+            {
+            }
+        }
+
+        return applied;
+    }
+
+    public void RestorePriorities(OptimizationSession session)
+    {
+        foreach (var item in session.ChangedPriorities)
+        {
+            try
+            {
+                var process = Process.GetProcessById(item.Key);
+                if (!process.HasExited)
+                    process.PriorityClass = item.Value;
+            }
+            catch
+            {
+            }
+        }
+    }
+
+    public void RestoreAffinities(OptimizationSession session)
+    {
+        foreach (var item in session.ChangedAffinities)
+        {
+            try
+            {
+                var process = Process.GetProcessById(item.Key);
+                if (!process.HasExited)
+                    process.ProcessorAffinity = item.Value;
             }
             catch
             {
@@ -93,19 +165,19 @@ public class PerformanceManager
         }
     }
 
-    public void RestorePriorities(OptimizationSession session)
+    private static IntPtr GetPreferredAffinityMask()
     {
-        foreach (var item in session.ChangedPriorities)
-        {
-            try
-            {
-                var process = Process.GetProcessById(item.Key);
-                if (!process.HasExited)
-                    process.PriorityClass = item.Value;
-            }
-            catch
-            {
-            }
-        }
+        var processorCount = Environment.ProcessorCount;
+        if (processorCount <= 1)
+            return IntPtr.Zero;
+
+        long mask = 0;
+        for (var i = 0; i < processorCount; i += 2)
+            mask |= 1L << i;
+
+        if (mask == 0)
+            mask = (1L << Math.Min(processorCount, 1)) - 1;
+
+        return new IntPtr(mask);
     }
 }

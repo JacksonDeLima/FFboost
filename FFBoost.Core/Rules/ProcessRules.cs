@@ -1,3 +1,5 @@
+using FFBoost.Core.Models;
+
 namespace FFBoost.Core.Rules;
 
 public class ProcessRules
@@ -37,5 +39,19 @@ public class ProcessRules
     public bool IsSafeToClose(string processName, IEnumerable<string> safeBlacklist)
     {
         return safeBlacklist.Contains(processName, StringComparer.OrdinalIgnoreCase);
+    }
+
+    public ProcessRiskLevel GetRiskLevel(string processName, IEnumerable<string> allowed, IEnumerable<string> blacklist)
+    {
+        if (IsCritical(processName))
+            return ProcessRiskLevel.Risky;
+
+        if (IsAllowed(processName, allowed))
+            return ProcessRiskLevel.Optional;
+
+        if (blacklist.Contains(processName, StringComparer.OrdinalIgnoreCase))
+            return ProcessRiskLevel.Safe;
+
+        return ProcessRiskLevel.Optional;
     }
 }

@@ -1,0 +1,3 @@
+C:\Developor\FFboost\dist\publish_v4\config.json
+C:\Developor\FFboost\dist\publish_v4\FFBoost.Core.pdb
+C:\Developor\FFboost\dist\publish_v4\FFBoost.exe
