@@ -6,22 +6,6 @@ namespace FFBoost.Core.Services;
 
 public class OptimizerService
 {
-    private static readonly HashSet<string> AggressiveKillTargets = new(StringComparer.OrdinalIgnoreCase)
-    {
-        "epicgameslauncher",
-        "steam",
-        "steamwebhelper",
-        "webex",
-        "zoom",
-        "uplay",
-        "upc",
-        "battle.net",
-        "ubisoftconnect",
-        "ea",
-        "galaxyclient",
-        "riotclientservices"
-    };
-
     private static readonly HashSet<string> PreserveDuringRecording = new(StringComparer.OrdinalIgnoreCase)
     {
         "discord",
@@ -32,6 +16,15 @@ public class OptimizerService
         "streamlabsobs"
     };
 
+    private static readonly HashSet<string> BrowserTargets = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "chrome",
+        "msedge",
+        "firefox",
+        "opera",
+        "brave"
+    };
+
     private readonly ConfigService _configService;
     private readonly ProcessScanner _scanner;
     private readonly ProcessKiller _killer;
@@ -39,6 +32,7 @@ public class OptimizerService
     private readonly PerformanceManager _performance;
     private readonly TimerResolutionService _timerResolution;
     private readonly OverlayService _overlayService;
+    private readonly ExplorerWindowService _explorerWindowService;
     private readonly ProcessRules _rules;
     private readonly OptimizationSession _session = new();
 
@@ -52,6 +46,7 @@ public class OptimizerService
         PerformanceManager performance,
         TimerResolutionService timerResolution,
         OverlayService overlayService,
+        ExplorerWindowService explorerWindowService,
         ProcessRules rules)
     {
         _configService = configService;
@@ -61,6 +56,7 @@ public class OptimizerService
         _performance = performance;
         _timerResolution = timerResolution;
         _overlayService = overlayService;
+        _explorerWindowService = explorerWindowService;
         _rules = rules;
     }
 
@@ -79,10 +75,13 @@ public class OptimizerService
 
         var config = _configService.Load();
         var running = _scanner.GetRunningProcesses();
-        var runningNames = running.Select(static p => p.ProcessName).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+        var runningNames = running
+            .Select(p => p.ProcessName)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
         var emulatorProcesses = _scanner.FindProcessesByNames(config.EmulatorProcesses);
         var recorderProcesses = _scanner.FindProcessesByNames(config.RecordingProcesses);
-        var effectiveAllowedProcesses = GetAllowedProcesses(config, report.RecordingModeDetected);
 
         report.Profile = config.SelectedProfile;
         report.FreeFireModeEnabled = config.EnableFreeFireMode;
@@ -93,21 +92,27 @@ public class OptimizerService
         {
             logs.Add("BlueStacks nao detectado.");
             LastTechnicalReport = report;
-            return ("BlueStacks nao detectado.", logs);
+            return ("BlueStacks nao detectado. Abra o emulador antes de otimizar.", logs);
         }
 
+        var effectiveAllowedProcesses = GetAllowedProcesses(config, report.RecordingModeDetected);
+
         _session.ActiveProfile = config.SelectedProfile;
-        logs.Add($"Emulador detectado: {string.Join(", ", emulatorProcesses.Select(static p => p.ProcessName).Distinct())}");
+
+        logs.Add($"Emulador detectado: {string.Join(", ", emulatorProcesses.Select(p => p.ProcessName).Distinct())}");
         logs.Add($"Perfil selecionado: {config.SelectedProfile}");
         logs.Add(config.EnableFreeFireMode
             ? "Modo Free Fire + BlueStacks ativo."
             : "Modo padrao de otimizacao ativo.");
 
         if (report.RecordingModeDetected)
-            logs.Add($"Modo gravacao detectado: {string.Join(", ", recorderProcesses.Select(static p => p.ProcessName).Distinct())}");
+        {
+            logs.Add($"Modo gravacao detectado: {string.Join(", ", recorderProcesses.Select(p => p.ProcessName).Distinct())}");
+        }
 
         var activeKillBlacklist = GetKillBlacklistByProfile(config, report.RecordingModeDetected);
         var activeSuspendBlacklist = GetSuspendBlacklistByProfile(config, report.RecordingModeDetected);
+
         report.KillPlanCount = activeKillBlacklist.Count;
         report.SuspendPlanCount = activeSuspendBlacklist.Count;
 
@@ -146,16 +151,50 @@ public class OptimizerService
         }
 
         var killResult = _killer.KillProcesses(killCandidates);
+
+        foreach (var browserName in BrowserTargets)
+        {
+            if (!activeKillBlacklist.Contains(browserName, StringComparer.OrdinalIgnoreCase))
+                continue;
+
+            var extraKilled = _killer.KillProcessesByName(browserName);
+
+            foreach (var item in extraKilled)
+            {
+                if (!killResult.KilledProcesses.Contains(item, StringComparer.OrdinalIgnoreCase))
+                    killResult.KilledProcesses.Add(item);
+
+                logs.Add($"Encerrado na segunda passada: {item}");
+            }
+        }
+
+        var explorerClosed = _explorerWindowService.CloseExplorerWindows();
+        if (explorerClosed > 0)
+        {
+            logs.Add($"Janelas do Explorer fechadas: {explorerClosed}");
+        }
+
         var suspended = _suspendService.SuspendProcesses(suspendCandidates, _session);
 
         _session.KilledProcesses.AddRange(killResult.KilledProcesses);
-        report.KilledProcesses = killResult.KilledProcesses.Distinct(StringComparer.OrdinalIgnoreCase).OrderBy(static x => x).ToList();
-        report.SuspendedProcesses = suspended.Distinct(StringComparer.OrdinalIgnoreCase).OrderBy(static x => x).ToList();
+
+        report.KilledProcesses = killResult.KilledProcesses
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(x => x)
+            .ToList();
+
+        report.SuspendedProcesses = suspended
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(x => x)
+            .ToList();
+
         report.KilledCount = report.KilledProcesses.Count;
         report.SuspendedCount = report.SuspendedProcesses.Count;
 
         foreach (var failed in killResult.FailedProcesses.Distinct(StringComparer.OrdinalIgnoreCase))
+        {
             logs.Add($"Falha ao encerrar: {failed}");
+        }
 
         if (config.SetEmulatorHighPriority)
         {
@@ -204,12 +243,20 @@ public class OptimizerService
             }
         }
 
-        report.Suggestions = BuildSuggestions(config, runningNames, effectiveAllowedProcesses, recorderProcesses.Count > 0);
+        report.Suggestions = BuildSuggestions(
+            config,
+            runningNames,
+            effectiveAllowedProcesses,
+            recorderProcesses.Count > 0);
+
         foreach (var suggestion in report.Suggestions)
+        {
             logs.Add($"Sugestao: {suggestion}");
+        }
 
         _session.IsGameModeActive = true;
         report.ProcessesAfter = Math.Max(0, report.ProcessesBefore - report.KilledCount);
+
         stopwatch.Stop();
         report.Elapsed = stopwatch.Elapsed;
         LastTechnicalReport = report;
@@ -219,7 +266,7 @@ public class OptimizerService
         logs.Add($"Overlays detectados: {report.OverlayCount}");
         logs.Add($"Tempo da otimizacao: {report.Elapsed.TotalMilliseconds:0} ms");
 
-        return ($"Modo jogo ativado. {report.KilledCount} encerrado(s), {report.SuspendedCount} suspenso(s).", logs);
+        return ($"Modo jogo ativado.\n{report.KilledCount} encerrado(s), {report.SuspendedCount} suspenso(s).", logs);
     }
 
     public (string status, List<string> logs) Restore()
@@ -234,7 +281,9 @@ public class OptimizerService
 
         var resumed = _suspendService.ResumeProcesses(_session);
         if (resumed.Count > 0)
+        {
             logs.Add($"Processos retomados: {string.Join(", ", resumed.Distinct(StringComparer.OrdinalIgnoreCase))}");
+        }
 
         _performance.RestoreAffinities(_session);
         logs.Add("Afinidades restauradas.");
@@ -285,18 +334,18 @@ public class OptimizerService
         if (config.SelectedProfile.Equals("Forte", StringComparison.OrdinalIgnoreCase) ||
             config.SelectedProfile.Equals("Ultra", StringComparison.OrdinalIgnoreCase))
         {
-            result.AddRange(FilterAggressiveKillTargets(config.StrongBlacklist));
+            result.AddRange(config.StrongBlacklist);
 
             if (config.EnableFreeFireMode)
-                result.AddRange(FilterAggressiveKillTargets(config.FreeFireStrongBlacklist));
+                result.AddRange(config.FreeFireStrongBlacklist);
         }
 
         if (config.SelectedProfile.Equals("Ultra", StringComparison.OrdinalIgnoreCase))
         {
-            result.AddRange(FilterAggressiveKillTargets(config.UltraBlacklist));
+            result.AddRange(config.UltraBlacklist);
 
             if (config.EnableFreeFireMode)
-                result.AddRange(FilterAggressiveKillTargets(config.FreeFireUltraBlacklist));
+                result.AddRange(config.FreeFireUltraBlacklist);
         }
 
         if (recordingMode)
@@ -310,23 +359,6 @@ public class OptimizerService
     private static List<string> GetSuspendBlacklistByProfile(AppConfig config, bool recordingMode)
     {
         var result = new List<string>();
-
-        if (config.SelectedProfile.Equals("Forte", StringComparison.OrdinalIgnoreCase) ||
-            config.SelectedProfile.Equals("Ultra", StringComparison.OrdinalIgnoreCase))
-        {
-            result.AddRange(FilterSuspendTargets(config.StrongBlacklist));
-
-            if (config.EnableFreeFireMode)
-                result.AddRange(FilterSuspendTargets(config.FreeFireStrongBlacklist));
-        }
-
-        if (config.SelectedProfile.Equals("Ultra", StringComparison.OrdinalIgnoreCase))
-        {
-            result.AddRange(FilterSuspendTargets(config.UltraBlacklist));
-
-            if (config.EnableFreeFireMode)
-                result.AddRange(FilterSuspendTargets(config.FreeFireUltraBlacklist));
-        }
 
         if (recordingMode)
             result.RemoveAll(ShouldPreserveWhileRecording);
@@ -375,16 +407,6 @@ public class OptimizerService
         return result
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
-    }
-
-    private static IEnumerable<string> FilterAggressiveKillTargets(IEnumerable<string> processes)
-    {
-        return processes.Where(name => AggressiveKillTargets.Contains(name));
-    }
-
-    private static IEnumerable<string> FilterSuspendTargets(IEnumerable<string> processes)
-    {
-        return processes.Where(name => !AggressiveKillTargets.Contains(name));
     }
 
     private static bool ShouldPreserveWhileRecording(string processName)

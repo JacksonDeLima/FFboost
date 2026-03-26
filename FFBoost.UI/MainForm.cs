@@ -63,6 +63,7 @@ public class MainForm : Form
             new PerformanceManager(),
             new TimerResolutionService(),
             new OverlayService(),
+            new ExplorerWindowService(),
             new ProcessRules());
 
         _adminService = new AdminService();
