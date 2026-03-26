@@ -9,6 +9,10 @@
 </p>
 
 <p align="center">
+  <b>Version:</b> v4.3
+</p>
+
+<p align="center">
   <img src="https://img.shields.io/badge/.NET-10-blue?style=for-the-badge" alt=".NET 10"/>
   <img src="https://img.shields.io/badge/Platform-Windows-0078D6?style=for-the-badge" alt="Windows"/>
   <img src="https://img.shields.io/github/stars/JacksonDeLima/FFboost?style=for-the-badge" alt="GitHub stars"/>
@@ -23,6 +27,26 @@
     <img src="https://img.shields.io/badge/Download-FFBoost-blue?style=for-the-badge&logo=windows" alt="Download FF Boost"/>
   </a>
 </p>
+
+---
+
+## Release v4.3
+
+Melhorias principais desta versao:
+
+- tema visual principal alinhado ao mockup neon do produto
+- otimizador com encerramento mais agressivo e previsivel
+- segunda passada para navegadores multi-processo
+- fechamento de janelas do Explorer sem matar o shell
+- logs e telemetria mais consistentes
+- arquitetura refatorada com menos regra de negocio na UI
+- base inicial de testes automatizados para o core
+- setup revisado com servico dedicado de instalacao e desinstalacao
+
+Arquivos da versao local:
+
+- `dist/publish_v4_3/FFBoost.exe`
+- `dist/installer_v4_3/FFBoost-Setup.exe`
 
 ---
 
