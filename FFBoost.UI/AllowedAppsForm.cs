@@ -23,8 +23,8 @@ public class AllowedAppsForm : Form
 
         Text = "Apps Permitidos";
         StartPosition = FormStartPosition.CenterParent;
-        ClientSize = new Size(700, 590);
-        MinimumSize = new Size(700, 590);
+        ClientSize = new Size(760, 560);
+        MinimumSize = new Size(760, 560);
         BackColor = Color.FromArgb(4, 8, 18);
         ForeColor = Color.White;
         Font = new Font("Segoe UI", 10F, FontStyle.Regular, GraphicsUnit.Point);
@@ -37,7 +37,8 @@ public class AllowedAppsForm : Form
             Height = 52,
             TextAlign = ContentAlignment.MiddleCenter,
             Font = new Font("Segoe UI Semibold", 18F, FontStyle.Bold, GraphicsUnit.Point),
-            ForeColor = Color.FromArgb(244, 247, 255)
+            ForeColor = Color.FromArgb(244, 247, 255),
+            BackColor = Color.Transparent
         };
 
         var signatureLabel = new Label
@@ -47,146 +48,86 @@ public class AllowedAppsForm : Form
             Height = 22,
             TextAlign = ContentAlignment.MiddleCenter,
             ForeColor = Color.FromArgb(86, 239, 255),
+            BackColor = Color.Transparent,
             Font = new Font("Segoe UI Semibold", 10F, FontStyle.Italic, GraphicsUnit.Point)
         };
 
-        var lblAllowed = new Label
-        {
-            Text = "Apps permitidos",
-            ForeColor = Color.FromArgb(0, 224, 255),
-            AutoSize = true,
-            Location = new Point(26, 18)
-        };
+        _lstAllowed = CreateListBox();
+        _lstRunning = CreateListBox();
 
-        var lblRunning = new Label
-        {
-            Text = "Processos em execucao",
-            ForeColor = Color.FromArgb(0, 224, 255),
-            AutoSize = true,
-            Location = new Point(376, 18)
-        };
-
-        _lstAllowed = new ListBox
-        {
-            Location = new Point(26, 42),
-            Size = new Size(290, 270),
-            BackColor = Color.FromArgb(7, 10, 22),
-            ForeColor = Color.FromArgb(235, 241, 255),
-            BorderStyle = BorderStyle.None
-        };
-
-        _lstRunning = new ListBox
-        {
-            Location = new Point(376, 42),
-            Size = new Size(290, 270),
-            BackColor = Color.FromArgb(7, 10, 22),
-            ForeColor = Color.FromArgb(235, 241, 255),
-            BorderStyle = BorderStyle.None
-        };
-
-        _txtProcessName = new TextBox
-        {
-            Location = new Point(26, 328),
-            Size = new Size(290, 27),
-            BackColor = Color.FromArgb(10, 18, 36),
-            ForeColor = Color.White,
-            BorderStyle = BorderStyle.FixedSingle
-        };
-
-        _txtRunningFilter = new TextBox
-        {
-            Location = new Point(376, 328),
-            Size = new Size(290, 27),
-            BackColor = Color.FromArgb(10, 18, 36),
-            ForeColor = Color.White,
-            BorderStyle = BorderStyle.FixedSingle,
-            PlaceholderText = "Filtrar processos"
-        };
+        _txtProcessName = CreateTextBox();
+        _txtRunningFilter = CreateTextBox();
+        _txtRunningFilter.PlaceholderText = "Filtrar processos";
         _txtRunningFilter.TextChanged += (_, _) => LoadRunningProcesses();
 
-        var btnAddManual = new Button
-        {
-            Text = "Adicionar manualmente",
-            Location = new Point(26, 370),
-            Size = new Size(290, 36),
-            BackColor = Color.FromArgb(8, 16, 34),
-            ForeColor = Color.White,
-            FlatStyle = FlatStyle.Flat
-        };
-        btnAddManual.FlatAppearance.BorderColor = Color.FromArgb(0, 224, 255);
+        var btnAddManual = CreateActionButton("Adicionar manualmente", Color.FromArgb(0, 224, 255));
         btnAddManual.Click += BtnAddManual_Click;
 
-        var btnAddSelected = new Button
-        {
-            Text = "Adicionar selecionado",
-            Location = new Point(376, 370),
-            Size = new Size(290, 36),
-            BackColor = Color.FromArgb(8, 16, 34),
-            ForeColor = Color.White,
-            FlatStyle = FlatStyle.Flat
-        };
-        btnAddSelected.FlatAppearance.BorderColor = Color.FromArgb(0, 224, 255);
+        var btnAddSelected = CreateActionButton("Adicionar selecionado", Color.FromArgb(0, 224, 255));
         btnAddSelected.Click += BtnAddSelected_Click;
 
-        var btnRefreshRunning = new Button
-        {
-            Text = "Atualizar processos",
-            Location = new Point(376, 416),
-            Size = new Size(290, 34),
-            BackColor = Color.FromArgb(8, 16, 34),
-            ForeColor = Color.White,
-            FlatStyle = FlatStyle.Flat
-        };
-        btnRefreshRunning.FlatAppearance.BorderColor = Color.FromArgb(0, 224, 255);
-        btnRefreshRunning.Click += BtnRefreshRunning_Click;
-
-        var btnRemove = new Button
-        {
-            Text = "Remover selecionado",
-            Location = new Point(26, 416),
-            Size = new Size(290, 36),
-            BackColor = Color.FromArgb(24, 10, 22),
-            ForeColor = Color.White,
-            FlatStyle = FlatStyle.Flat
-        };
-        btnRemove.FlatAppearance.BorderColor = Color.FromArgb(255, 90, 95);
+        var btnRemove = CreateActionButton("Remover selecionado", Color.FromArgb(255, 90, 95));
         btnRemove.Click += BtnRemove_Click;
+
+        var btnRefreshRunning = CreateActionButton("Atualizar processos", Color.FromArgb(0, 224, 255));
+        btnRefreshRunning.Click += BtnRefreshRunning_Click;
 
         _lblFeedback = new Label
         {
-            Location = new Point(26, 468),
-            Size = new Size(640, 34),
+            Dock = DockStyle.Fill,
             ForeColor = Color.FromArgb(120, 255, 180),
-            Text = "Pronto."
+            BackColor = Color.Transparent,
+            Text = "Pronto.",
+            TextAlign = ContentAlignment.MiddleLeft
         };
+
+        var columns = new TableLayoutPanel
+        {
+            Dock = DockStyle.Fill,
+            ColumnCount = 2,
+            RowCount = 5,
+            BackColor = Color.Transparent,
+            Padding = new Padding(18, 12, 18, 10)
+        };
+        columns.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
+        columns.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
+        columns.RowStyles.Add(new RowStyle(SizeType.Absolute, 28F));
+        columns.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+        columns.RowStyles.Add(new RowStyle(SizeType.Absolute, 38F));
+        columns.RowStyles.Add(new RowStyle(SizeType.Absolute, 46F));
+        columns.RowStyles.Add(new RowStyle(SizeType.Absolute, 46F));
+
+        columns.Controls.Add(CreateSectionLabel("Apps permitidos"), 0, 0);
+        columns.Controls.Add(CreateSectionLabel("Processos em execucao"), 1, 0);
+        columns.Controls.Add(WrapControl(_lstAllowed, new Padding(0, 0, 10, 10)), 0, 1);
+        columns.Controls.Add(WrapControl(_lstRunning, new Padding(10, 0, 0, 10)), 1, 1);
+        columns.Controls.Add(WrapControl(_txtProcessName, new Padding(0, 0, 10, 8)), 0, 2);
+        columns.Controls.Add(WrapControl(_txtRunningFilter, new Padding(10, 0, 0, 8)), 1, 2);
+        columns.Controls.Add(WrapControl(btnAddManual, new Padding(0, 0, 10, 8)), 0, 3);
+        columns.Controls.Add(WrapControl(btnAddSelected, new Padding(10, 0, 0, 8)), 1, 3);
+        columns.Controls.Add(WrapControl(btnRemove, new Padding(0, 0, 10, 0)), 0, 4);
+        columns.Controls.Add(WrapControl(btnRefreshRunning, new Padding(10, 0, 0, 0)), 1, 4);
 
         var footerSignature = new Label
         {
             Text = SignatureText,
-            Dock = DockStyle.Bottom,
-            Height = 24,
+            Dock = DockStyle.Right,
+            Width = 180,
             TextAlign = ContentAlignment.MiddleRight,
             ForeColor = Color.FromArgb(88, 236, 255),
+            BackColor = Color.Transparent,
             Font = new Font("Segoe UI Semibold", 9F, FontStyle.Italic, GraphicsUnit.Point)
         };
 
-        var contentPanel = new Panel
+        var footer = new Panel
         {
-            Dock = DockStyle.Fill,
-            Padding = new Padding(0, 8, 0, 0),
-            BackColor = Color.Transparent
+            Dock = DockStyle.Bottom,
+            Height = 34,
+            BackColor = Color.Transparent,
+            Padding = new Padding(18, 0, 18, 6)
         };
-        contentPanel.Controls.Add(lblAllowed);
-        contentPanel.Controls.Add(lblRunning);
-        contentPanel.Controls.Add(_lstAllowed);
-        contentPanel.Controls.Add(_lstRunning);
-        contentPanel.Controls.Add(_txtProcessName);
-        contentPanel.Controls.Add(_txtRunningFilter);
-        contentPanel.Controls.Add(btnAddManual);
-        contentPanel.Controls.Add(btnAddSelected);
-        contentPanel.Controls.Add(btnRefreshRunning);
-        contentPanel.Controls.Add(btnRemove);
-        contentPanel.Controls.Add(_lblFeedback);
+        footer.Controls.Add(footerSignature);
+        footer.Controls.Add(_lblFeedback);
 
         var card = new NeonPanel
         {
@@ -198,6 +139,11 @@ public class AllowedAppsForm : Form
             Padding = new Padding(8)
         };
 
+        card.Controls.Add(columns);
+        card.Controls.Add(footer);
+        card.Controls.Add(signatureLabel);
+        card.Controls.Add(titleLabel);
+
         var shell = new SciFiPanel
         {
             Dock = DockStyle.Fill,
@@ -206,15 +152,69 @@ public class AllowedAppsForm : Form
             Padding = new Padding(14)
         };
 
-        card.Controls.Add(contentPanel);
-        card.Controls.Add(footerSignature);
-        card.Controls.Add(signatureLabel);
-        card.Controls.Add(titleLabel);
         shell.Controls.Add(card);
         Controls.Add(shell);
 
         LoadAllowedApps();
         LoadRunningProcesses();
+    }
+
+    private static ListBox CreateListBox() =>
+        new()
+        {
+            Dock = DockStyle.Fill,
+            BackColor = Color.FromArgb(7, 10, 22),
+            ForeColor = Color.FromArgb(235, 241, 255),
+            BorderStyle = BorderStyle.None,
+            IntegralHeight = false
+        };
+
+    private static TextBox CreateTextBox() =>
+        new()
+        {
+            Dock = DockStyle.Fill,
+            BackColor = Color.FromArgb(10, 18, 36),
+            ForeColor = Color.White,
+            BorderStyle = BorderStyle.FixedSingle
+        };
+
+    private static Button CreateActionButton(string text, Color borderColor)
+    {
+        var button = new Button
+        {
+            Text = text,
+            Dock = DockStyle.Fill,
+            Height = 38,
+            BackColor = borderColor == Color.FromArgb(255, 90, 95)
+                ? Color.FromArgb(24, 10, 22)
+                : Color.FromArgb(8, 16, 34),
+            ForeColor = Color.White,
+            FlatStyle = FlatStyle.Flat
+        };
+        button.FlatAppearance.BorderColor = borderColor;
+        return button;
+    }
+
+    private static Label CreateSectionLabel(string text) =>
+        new()
+        {
+            Dock = DockStyle.Fill,
+            Text = text,
+            ForeColor = Color.FromArgb(0, 224, 255),
+            BackColor = Color.Transparent,
+            TextAlign = ContentAlignment.MiddleLeft
+        };
+
+    private static Panel WrapControl(Control control, Padding margin)
+    {
+        var panel = new Panel
+        {
+            Dock = DockStyle.Fill,
+            Margin = margin,
+            BackColor = Color.Transparent
+        };
+        panel.Controls.Add(control);
+        return panel;
     }
 
     private void LoadAllowedApps()
