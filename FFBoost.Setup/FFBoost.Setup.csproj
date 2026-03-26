@@ -18,5 +18,6 @@
   <ItemGroup>
     <EmbeddedResource Include="..\Installer\Payload\FFBoost.exe" LogicalName="Payload.FFBoost.exe" />
     <EmbeddedResource Include="..\Installer\Payload\config.json" LogicalName="Payload.config.json" />
+    <EmbeddedResource Include="..\FFBoost.UI\Assets\ffboost-logo.png" LogicalName="Assets.ffboost-logo.png" />
   </ItemGroup>
 </Project>

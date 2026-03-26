@@ -1,5 +1,0 @@
-Status: BlueStacks nao detectado.
-Perfil: Ultra
-CPU: 32,74% -> 27,78%
-RAM: 10,88 GB -> 10,89 GB
-BlueStacks nao detectado.

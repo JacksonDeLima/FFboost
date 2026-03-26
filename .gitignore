@@ -1,0 +1,8 @@
+bin/
+obj/
+dist/
+
+Installer/Payload/FFBoost.exe
+Installer/Payload/config.json
+
+*.log

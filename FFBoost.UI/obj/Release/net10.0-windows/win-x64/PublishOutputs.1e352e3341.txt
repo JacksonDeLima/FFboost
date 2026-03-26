@@ -1,4 +1,0 @@
-C:\Developor\FFboost\FFBoost.UI\bin\Release\net10.0-windows\win-x64\publish\FFBoost.pdb
-C:\Developor\FFboost\FFBoost.UI\bin\Release\net10.0-windows\win-x64\publish\config.json
-C:\Developor\FFboost\FFBoost.UI\bin\Release\net10.0-windows\win-x64\publish\FFBoost.Core.pdb
-C:\Developor\FFboost\FFBoost.UI\bin\Release\net10.0-windows\win-x64\publish\FFBoost.exe

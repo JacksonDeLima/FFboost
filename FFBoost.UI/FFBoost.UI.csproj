@@ -31,4 +31,8 @@
   <ItemGroup>
     <Content Include="Assets\ffboost.ico" />
   </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Assets\ffboost-logo.png" />
+  </ItemGroup>
 </Project>

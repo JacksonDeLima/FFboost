@@ -25,9 +25,10 @@ public class AllowedAppsForm : Form
         StartPosition = FormStartPosition.CenterParent;
         ClientSize = new Size(700, 590);
         MinimumSize = new Size(700, 590);
-        BackColor = Color.FromArgb(10, 14, 24);
+        BackColor = Color.FromArgb(4, 8, 18);
         ForeColor = Color.White;
         Font = new Font("Segoe UI", 10F, FontStyle.Regular, GraphicsUnit.Point);
+        Padding = new Padding(12);
 
         var titleLabel = new Label
         {
@@ -69,25 +70,25 @@ public class AllowedAppsForm : Form
         {
             Location = new Point(26, 42),
             Size = new Size(290, 270),
-            BackColor = Color.FromArgb(13, 19, 34),
+            BackColor = Color.FromArgb(7, 10, 22),
             ForeColor = Color.FromArgb(235, 241, 255),
-            BorderStyle = BorderStyle.FixedSingle
+            BorderStyle = BorderStyle.None
         };
 
         _lstRunning = new ListBox
         {
             Location = new Point(376, 42),
             Size = new Size(290, 270),
-            BackColor = Color.FromArgb(13, 19, 34),
+            BackColor = Color.FromArgb(7, 10, 22),
             ForeColor = Color.FromArgb(235, 241, 255),
-            BorderStyle = BorderStyle.FixedSingle
+            BorderStyle = BorderStyle.None
         };
 
         _txtProcessName = new TextBox
         {
             Location = new Point(26, 328),
             Size = new Size(290, 27),
-            BackColor = Color.FromArgb(18, 26, 46),
+            BackColor = Color.FromArgb(10, 18, 36),
             ForeColor = Color.White,
             BorderStyle = BorderStyle.FixedSingle
         };
@@ -96,7 +97,7 @@ public class AllowedAppsForm : Form
         {
             Location = new Point(376, 328),
             Size = new Size(290, 27),
-            BackColor = Color.FromArgb(18, 26, 46),
+            BackColor = Color.FromArgb(10, 18, 36),
             ForeColor = Color.White,
             BorderStyle = BorderStyle.FixedSingle,
             PlaceholderText = "Filtrar processos"
@@ -108,7 +109,7 @@ public class AllowedAppsForm : Form
             Text = "Adicionar manualmente",
             Location = new Point(26, 370),
             Size = new Size(290, 36),
-            BackColor = Color.FromArgb(18, 26, 46),
+            BackColor = Color.FromArgb(8, 16, 34),
             ForeColor = Color.White,
             FlatStyle = FlatStyle.Flat
         };
@@ -120,7 +121,7 @@ public class AllowedAppsForm : Form
             Text = "Adicionar selecionado",
             Location = new Point(376, 370),
             Size = new Size(290, 36),
-            BackColor = Color.FromArgb(18, 26, 46),
+            BackColor = Color.FromArgb(8, 16, 34),
             ForeColor = Color.White,
             FlatStyle = FlatStyle.Flat
         };
@@ -132,7 +133,7 @@ public class AllowedAppsForm : Form
             Text = "Atualizar processos",
             Location = new Point(376, 416),
             Size = new Size(290, 34),
-            BackColor = Color.FromArgb(18, 26, 46),
+            BackColor = Color.FromArgb(8, 16, 34),
             ForeColor = Color.White,
             FlatStyle = FlatStyle.Flat
         };
@@ -144,7 +145,7 @@ public class AllowedAppsForm : Form
             Text = "Remover selecionado",
             Location = new Point(26, 416),
             Size = new Size(290, 36),
-            BackColor = Color.FromArgb(18, 26, 46),
+            BackColor = Color.FromArgb(24, 10, 22),
             ForeColor = Color.White,
             FlatStyle = FlatStyle.Flat
         };
@@ -172,7 +173,8 @@ public class AllowedAppsForm : Form
         var contentPanel = new Panel
         {
             Dock = DockStyle.Fill,
-            Padding = new Padding(0, 8, 0, 0)
+            Padding = new Padding(0, 8, 0, 0),
+            BackColor = Color.Transparent
         };
         contentPanel.Controls.Add(lblAllowed);
         contentPanel.Controls.Add(lblRunning);
@@ -186,10 +188,30 @@ public class AllowedAppsForm : Form
         contentPanel.Controls.Add(btnRemove);
         contentPanel.Controls.Add(_lblFeedback);
 
-        Controls.Add(contentPanel);
-        Controls.Add(footerSignature);
-        Controls.Add(signatureLabel);
-        Controls.Add(titleLabel);
+        var card = new NeonPanel
+        {
+            Dock = DockStyle.Fill,
+            BorderColor = Color.FromArgb(60, 181, 255),
+            GlowColor = Color.FromArgb(255, 107, 70),
+            FillTop = Color.FromArgb(9, 12, 26),
+            FillBottom = Color.FromArgb(5, 8, 20),
+            Padding = new Padding(8)
+        };
+
+        var shell = new SciFiPanel
+        {
+            Dock = DockStyle.Fill,
+            BorderGlowLeft = Color.FromArgb(40, 88, 255),
+            BorderGlowRight = Color.FromArgb(255, 102, 68),
+            Padding = new Padding(14)
+        };
+
+        card.Controls.Add(contentPanel);
+        card.Controls.Add(footerSignature);
+        card.Controls.Add(signatureLabel);
+        card.Controls.Add(titleLabel);
+        shell.Controls.Add(card);
+        Controls.Add(shell);
 
         LoadAllowedApps();
         LoadRunningProcesses();

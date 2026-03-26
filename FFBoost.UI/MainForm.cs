@@ -2,13 +2,13 @@ using FFBoost.Core.Rules;
 using FFBoost.Core.Services;
 using System.ComponentModel;
 using System.Drawing.Drawing2D;
+using System.Reflection;
 using System.Runtime.InteropServices;
 
 namespace FFBoost.UI;
 
 public class MainForm : Form
 {
-    private const string SignatureText = "\u6587\uFF29\uFF4C\uFF55\uFF53\uFF49\uFF4F\uFF4E";
     private const int HotkeyIdToggle = 9001;
     private const uint ModControl = 0x0002;
     private const uint ModShift = 0x0004;
@@ -21,21 +21,22 @@ public class MainForm : Form
     private readonly LogFileService _logFileService;
     private readonly TelemetryService _telemetryService;
     private readonly GameWatcherService _watcherService;
-    private readonly Panel _accentBar;
     private readonly Label _lblStatus;
     private readonly Label _lblAdminStatus;
-    private readonly Label _lblSignature;
     private readonly Label _lblSubtitle;
-    private readonly ListBox _lstLogs;
-    private readonly ComboBox _cmbProfile;
-    private readonly CheckBox _chkFreeFireMode;
+    private readonly Label _lblTagline;
     private readonly Label _lblCpuInfo;
     private readonly Label _lblRamInfo;
     private readonly Label _lblBenchmarkInfo;
     private readonly Label _lblRecommendation;
+    private readonly ListBox _lstLogs;
+    private readonly ComboBox _cmbProfile;
+    private readonly CheckBox _chkFreeFireMode;
     private readonly Button _btnOptimize;
     private readonly Button _btnRestore;
     private readonly NotifyIcon _trayIcon;
+    private readonly PictureBox _logoBox;
+    private Image? _logoImage;
     private bool _exitRequested;
     private bool _watcherTriggeredChange;
 
@@ -45,9 +46,10 @@ public class MainForm : Form
         StartPosition = FormStartPosition.CenterScreen;
         ClientSize = new Size(760, 820);
         MinimumSize = new Size(760, 820);
-        BackColor = Color.FromArgb(10, 14, 24);
+        BackColor = Color.FromArgb(4, 8, 18);
         ForeColor = Color.White;
         Font = new Font("Segoe UI", 10F, FontStyle.Regular, GraphicsUnit.Point);
+        DoubleBuffered = true;
 
         var baseDirectory = AppDomain.CurrentDomain.BaseDirectory;
         var configPath = Path.Combine(baseDirectory, "config.json");
@@ -69,188 +71,97 @@ public class MainForm : Form
         _telemetryService = new TelemetryService(baseDirectory);
         _watcherService = new GameWatcherService(new ProcessScanner(), _configService);
 
-        var titleLabel = new Label
+        _logoBox = new PictureBox
         {
-            Text = "FF Boost",
-            Dock = DockStyle.Top,
-            Height = 72,
-            Font = new Font("Segoe UI Semibold", 28F, FontStyle.Bold, GraphicsUnit.Point),
-            TextAlign = ContentAlignment.MiddleCenter,
-            ForeColor = Color.FromArgb(244, 247, 255),
-            BackColor = Color.Transparent
+            Dock = DockStyle.Fill,
+            BackColor = Color.Transparent,
+            SizeMode = PictureBoxSizeMode.StretchImage
         };
 
         _lblSubtitle = new Label
         {
-            Text = "OTIMIZACAO DE SISTEMA PARA BAIXA LATENCIA",
             Dock = DockStyle.Top,
-            Height = 28,
+            Height = 20,
+            Text = "MORE FPS. LESS LAG.",
             TextAlign = ContentAlignment.MiddleCenter,
-            ForeColor = Color.FromArgb(0, 224, 255),
-            Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold, GraphicsUnit.Point)
-        };
-
-        var headerSignatureLabel = new Label
-        {
-            Text = SignatureText,
-            Dock = DockStyle.Top,
-            Height = 24,
-            TextAlign = ContentAlignment.MiddleCenter,
-            ForeColor = Color.FromArgb(86, 239, 255),
+            ForeColor = Color.FromArgb(245, 247, 255),
             BackColor = Color.Transparent,
-            Font = new Font("Segoe UI Semibold", 10F, FontStyle.Italic, GraphicsUnit.Point)
+            Font = new Font("Segoe UI Semibold", 10.5F, FontStyle.Bold, GraphicsUnit.Point),
+            Visible = false
         };
 
-        _btnOptimize = new Button
+        _lblTagline = new Label
         {
-            Text = "Otimizar Agora",
-            Width = 300,
-            Height = 72,
-            BackColor = Color.FromArgb(0, 198, 255),
-            ForeColor = Color.White,
-            FlatStyle = FlatStyle.Flat,
-            Font = new Font("Segoe UI Semibold", 14F, FontStyle.Bold, GraphicsUnit.Point),
-            Cursor = Cursors.Hand
+            Dock = DockStyle.Top,
+            Height = 20,
+            Text = "OPTIMIZATION ENGINE FOR LOW LATENCY",
+            TextAlign = ContentAlignment.MiddleCenter,
+            ForeColor = Color.FromArgb(111, 207, 255),
+            BackColor = Color.Transparent,
+            Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold, GraphicsUnit.Point),
+            Visible = false
         };
-        _btnOptimize.FlatAppearance.BorderSize = 0;
-        _btnOptimize.Click += (_, _) => ExecuteOptimize(manualTrigger: true);
 
-        var btnAllowedApps = new Button
-        {
-            Text = "Apps Permitidos",
-            Width = 180,
-            Height = 46,
-            FlatStyle = FlatStyle.Flat,
-            BackColor = Color.FromArgb(18, 26, 46),
-            ForeColor = Color.FromArgb(235, 241, 255),
-            Cursor = Cursors.Hand
-        };
-        btnAllowedApps.FlatAppearance.BorderColor = Color.FromArgb(0, 224, 255);
-        btnAllowedApps.Click += BtnAllowedApps_Click;
-
-        _btnRestore = new Button
-        {
-            Text = "Reverter Tudo",
-            Width = 180,
-            Height = 46,
-            FlatStyle = FlatStyle.Flat,
-            BackColor = Color.FromArgb(18, 26, 46),
-            ForeColor = Color.FromArgb(235, 241, 255),
-            Cursor = Cursors.Hand
-        };
-        _btnRestore.FlatAppearance.BorderColor = Color.FromArgb(255, 90, 95);
-        _btnRestore.Click += (_, _) => ExecuteRestore(manualTrigger: true);
-
-        var btnAbout = new Button
-        {
-            Text = "Sobre",
-            Width = 100,
-            Height = 34,
-            FlatStyle = FlatStyle.Flat,
-            BackColor = Color.FromArgb(12, 18, 34),
-            ForeColor = Color.FromArgb(190, 235, 255),
-            Cursor = Cursors.Hand
-        };
-        btnAbout.FlatAppearance.BorderColor = Color.FromArgb(0, 224, 255);
+        var btnAbout = CreateGhostButton("Sobre", 96, Color.FromArgb(65, 167, 255));
         btnAbout.Click += BtnAbout_Click;
 
-        var btnClearLog = new Button
-        {
-            Text = "Limpar Log",
-            Width = 120,
-            Height = 34,
-            FlatStyle = FlatStyle.Flat,
-            BackColor = Color.FromArgb(12, 18, 34),
-            ForeColor = Color.FromArgb(190, 235, 255),
-            Cursor = Cursors.Hand
-        };
-        btnClearLog.FlatAppearance.BorderColor = Color.FromArgb(0, 224, 255);
-
-        var btnAutoProfile = new Button
-        {
-            Text = "Perfil Auto",
-            Width = 110,
-            Height = 34,
-            FlatStyle = FlatStyle.Flat,
-            BackColor = Color.FromArgb(12, 18, 34),
-            ForeColor = Color.FromArgb(255, 196, 120),
-            Cursor = Cursors.Hand
-        };
-        btnAutoProfile.FlatAppearance.BorderColor = Color.FromArgb(255, 146, 72);
+        var btnAutoProfile = CreateGhostButton("Perfil Auto", 118, Color.FromArgb(255, 146, 72));
         btnAutoProfile.Click += (_, _) => ApplyRecommendedProfile();
 
-        var lblProfile = new Label
-        {
-            Dock = DockStyle.Left,
-            Width = 70,
-            Text = "PERFIL",
-            ForeColor = Color.FromArgb(0, 224, 255),
-            TextAlign = ContentAlignment.MiddleLeft,
-            Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold, GraphicsUnit.Point)
-        };
+        var btnClearLog = CreateGhostButton("Limpar Log", 114, Color.FromArgb(65, 167, 255));
+
+        var btnAllowedApps = CreateFrameButton("Apps Permitidos", 280, 48, Color.FromArgb(43, 184, 255), Color.FromArgb(8, 16, 34));
+        btnAllowedApps.Click += BtnAllowedApps_Click;
+
+        _btnRestore = CreateFrameButton("Restaurar", 280, 48, Color.FromArgb(255, 92, 92), Color.FromArgb(24, 10, 22));
+        _btnRestore.Click += (_, _) => ExecuteRestore(manualTrigger: true);
+
+        _btnOptimize = CreatePrimaryButton();
+        _btnOptimize.Click += (_, _) => ExecuteOptimize(manualTrigger: true);
 
         _cmbProfile = new ComboBox
         {
-            Width = 140,
+            Width = 220,
             DropDownStyle = ComboBoxStyle.DropDownList,
-            BackColor = Color.FromArgb(18, 26, 46),
+            BackColor = Color.FromArgb(10, 18, 36),
             ForeColor = Color.White,
-            FlatStyle = FlatStyle.Flat
+            FlatStyle = FlatStyle.Flat,
+            Font = new Font("Segoe UI Semibold", 13F, FontStyle.Bold, GraphicsUnit.Point)
         };
         _cmbProfile.SelectedIndexChanged += CmbProfile_SelectedIndexChanged;
 
         _chkFreeFireMode = new CheckBox
         {
             AutoSize = true,
-            Text = "Free Fire + BlueStacks",
-            ForeColor = Color.FromArgb(255, 120, 150),
+            Text = "Preset Free Fire + BlueStacks",
+            ForeColor = Color.FromArgb(255, 166, 113),
             BackColor = Color.Transparent,
-            Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold, GraphicsUnit.Point),
-            Cursor = Cursors.Hand
+            Font = new Font("Segoe UI Semibold", 9.5F, FontStyle.Bold, GraphicsUnit.Point),
+            Cursor = Cursors.Hand,
+            Visible = false
         };
         _chkFreeFireMode.CheckedChanged += ChkFreeFireMode_CheckedChanged;
 
         _lblAdminStatus = new Label
         {
-            Dock = DockStyle.Top,
+            AutoSize = false,
             Height = 24,
-            ForeColor = Color.FromArgb(255, 215, 120),
-            Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold, GraphicsUnit.Point),
-            Text = "Verificando permissoes..."
+            Dock = DockStyle.Top,
+            TextAlign = ContentAlignment.MiddleLeft,
+            ForeColor = Color.FromArgb(255, 209, 110),
+            BackColor = Color.Transparent,
+            Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold, GraphicsUnit.Point)
         };
 
-        var lblLogsTitle = new Label
-        {
-            Dock = DockStyle.Top,
-            Height = 24,
-            ForeColor = Color.FromArgb(0, 224, 255),
-            Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold, GraphicsUnit.Point),
-            Text = "LOG VISUAL"
-        };
-
-        _lblCpuInfo = new Label
-        {
-            Dock = DockStyle.Top,
-            Height = 22,
-            ForeColor = Color.FromArgb(190, 235, 255),
-            Font = new Font("Consolas", 10F, FontStyle.Regular, GraphicsUnit.Point),
-            Text = "CPU: --"
-        };
-
-        _lblRamInfo = new Label
-        {
-            Dock = DockStyle.Top,
-            Height = 22,
-            ForeColor = Color.FromArgb(190, 235, 255),
-            Font = new Font("Consolas", 10F, FontStyle.Regular, GraphicsUnit.Point),
-            Text = "RAM: --"
-        };
+        _lblCpuInfo = CreateMetricValueLabel("CPU: -- -> --");
+        _lblRamInfo = CreateMetricValueLabel("RAM: -- -> --");
 
         _lblBenchmarkInfo = new Label
         {
             Dock = DockStyle.Top,
-            Height = 22,
-            ForeColor = Color.FromArgb(255, 196, 120),
+            Height = 24,
+            ForeColor = Color.FromArgb(132, 208, 255),
+            BackColor = Color.Transparent,
             Font = new Font("Consolas", 9.5F, FontStyle.Regular, GraphicsUnit.Point),
             Text = "Benchmark: aguardando sessao."
         };
@@ -258,179 +169,86 @@ public class MainForm : Form
         _lblRecommendation = new Label
         {
             Dock = DockStyle.Top,
-            Height = 22,
-            ForeColor = Color.FromArgb(255, 140, 124),
-            Font = new Font("Consolas", 9.5F, FontStyle.Regular, GraphicsUnit.Point),
+            Height = 38,
+            ForeColor = Color.FromArgb(255, 179, 111),
+            BackColor = Color.Transparent,
+            Font = new Font("Segoe UI Semibold", 9F, FontStyle.Regular, GraphicsUnit.Point),
             Text = "Recomendacao: coletando historico local."
+        };
+
+        _lblStatus = new Label
+        {
+            Dock = DockStyle.Fill,
+            Padding = new Padding(18, 14, 18, 14),
+            BackColor = Color.Transparent,
+            ForeColor = Color.FromArgb(234, 241, 255),
+            Font = new Font("Consolas", 10.5F, FontStyle.Regular, GraphicsUnit.Point),
+            Text = "Pronto para otimizar.",
+            TextAlign = ContentAlignment.TopLeft
         };
 
         _lstLogs = new ListBox
         {
             Dock = DockStyle.Fill,
-            BackColor = Color.FromArgb(13, 19, 34),
-            ForeColor = Color.FromArgb(235, 241, 255),
-            BorderStyle = BorderStyle.FixedSingle,
-            Font = new Font("Consolas", 10.5F, FontStyle.Regular, GraphicsUnit.Point)
+            BackColor = Color.FromArgb(7, 10, 22),
+            ForeColor = Color.FromArgb(225, 231, 244),
+            BorderStyle = BorderStyle.None,
+            Font = new Font("Consolas", 10.25F, FontStyle.Regular, GraphicsUnit.Point),
+            IntegralHeight = false
         };
         btnClearLog.Click += (_, _) => _lstLogs.Items.Clear();
 
-        _lblStatus = new Label
-        {
-            Text = "Pronto para otimizar.",
-            Dock = DockStyle.Fill,
-            BorderStyle = BorderStyle.FixedSingle,
-            Padding = new Padding(16),
-            TextAlign = ContentAlignment.TopLeft,
-            BackColor = Color.FromArgb(13, 19, 34),
-            ForeColor = Color.FromArgb(235, 241, 255),
-            Font = new Font("Consolas", 11F, FontStyle.Regular, GraphicsUnit.Point)
-        };
-
-        var shellPanel = new GradientPanel
+        var root = new SciFiPanel
         {
             Dock = DockStyle.Fill,
-            ColorTop = Color.FromArgb(10, 14, 24),
-            ColorBottom = Color.FromArgb(20, 31, 56)
+            Padding = new Padding(18, 14, 18, 18),
+            BorderGlowLeft = Color.FromArgb(40, 88, 255),
+            BorderGlowRight = Color.FromArgb(255, 102, 68)
         };
 
-        _accentBar = new Panel
-        {
-            Dock = DockStyle.Top,
-            Height = 4,
-            BackColor = Color.FromArgb(0, 224, 255)
-        };
+        var heroCard = BuildHeroCard();
+        var profileCard = BuildProfileCard();
+        var optimizeCard = BuildOptimizeCard();
+        var actionCard = BuildActionCard(btnAllowedApps);
+        var metricsCard = BuildMetricsCard();
+        var logsCard = BuildLogsCard();
 
-        var topActionsHost = new Panel
-        {
-            Dock = DockStyle.Top,
-            Height = 38,
-            BackColor = Color.Transparent
-        };
-        topActionsHost.Controls.Add(btnAbout);
-        topActionsHost.Controls.Add(btnAutoProfile);
-        topActionsHost.Controls.Add(btnClearLog);
-        topActionsHost.Resize += (_, _) =>
-        {
-            btnAbout.Location = new Point(Math.Max(0, topActionsHost.Width - btnAbout.Width - 10), 2);
-            btnAutoProfile.Location = new Point(Math.Max(0, topActionsHost.Width - btnAbout.Width - btnAutoProfile.Width - 18), 2);
-            btnClearLog.Location = new Point(Math.Max(0, topActionsHost.Width - btnAbout.Width - btnAutoProfile.Width - btnClearLog.Width - 26), 2);
-        };
-
-        var contentPanel = new TableLayoutPanel
+        var layout = new TableLayoutPanel
         {
             Dock = DockStyle.Fill,
             ColumnCount = 1,
-            RowCount = 8,
-            Padding = new Padding(28, 16, 28, 24)
-        };
-        contentPanel.BackColor = Color.Transparent;
-        contentPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 28F));
-        contentPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 24F));
-        contentPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 46F));
-        contentPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 104F));
-        contentPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 58F));
-        contentPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 118F));
-        contentPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
-        contentPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 110F));
-
-        var optimizePanel = new Panel { Dock = DockStyle.Fill, BackColor = Color.Transparent };
-        optimizePanel.Controls.Add(_btnOptimize);
-        optimizePanel.Resize += (_, _) =>
-        {
-            _btnOptimize.Location = new Point(
-                Math.Max(0, (optimizePanel.Width - _btnOptimize.Width) / 2),
-                Math.Max(0, (optimizePanel.Height - _btnOptimize.Height) / 2));
-        };
-
-        var bottomButtonsHost = new Panel { Dock = DockStyle.Fill, BackColor = Color.Transparent };
-        bottomButtonsHost.Controls.Add(btnAllowedApps);
-        bottomButtonsHost.Controls.Add(_btnRestore);
-        bottomButtonsHost.Resize += (_, _) =>
-        {
-            const int spacing = 16;
-            var totalWidth = btnAllowedApps.Width + _btnRestore.Width + spacing;
-            var startX = Math.Max(0, (bottomButtonsHost.Width - totalWidth) / 2);
-            var y = Math.Max(0, (bottomButtonsHost.Height - btnAllowedApps.Height) / 2);
-            btnAllowedApps.Location = new Point(startX, y);
-            _btnRestore.Location = new Point(startX + btnAllowedApps.Width + spacing, y);
-        };
-
-        var profileHost = new Panel { Dock = DockStyle.Fill, BackColor = Color.Transparent };
-        profileHost.Controls.Add(_chkFreeFireMode);
-        profileHost.Controls.Add(_cmbProfile);
-        profileHost.Controls.Add(lblProfile);
-        profileHost.Resize += (_, _) =>
-        {
-            lblProfile.Location = new Point(Math.Max(0, (profileHost.Width - 430) / 2), 10);
-            _cmbProfile.Location = new Point(lblProfile.Right + 10, 8);
-            _chkFreeFireMode.Location = new Point(_cmbProfile.Right + 18, 10);
-        };
-
-        var adminHost = new Panel { Dock = DockStyle.Fill, BackColor = Color.Transparent };
-        adminHost.Controls.Add(_lblRecommendation);
-        adminHost.Controls.Add(_lblBenchmarkInfo);
-        adminHost.Controls.Add(_lblRamInfo);
-        adminHost.Controls.Add(_lblCpuInfo);
-        adminHost.Controls.Add(_lblAdminStatus);
-
-        var logsHost = new Panel
-        {
-            Dock = DockStyle.Fill,
-            BackColor = Color.Transparent,
-            Padding = new Padding(0, 0, 0, 8)
-        };
-        logsHost.Controls.Add(_lstLogs);
-        logsHost.Controls.Add(lblLogsTitle);
-
-        var statusContainer = new Panel
-        {
-            Dock = DockStyle.Fill,
-            Padding = new Padding(0, 8, 0, 0),
+            RowCount = 5,
             BackColor = Color.Transparent
         };
+        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 252F));
+        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 74F));
+        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 88F));
+        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 82F));
+        layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
 
-        var watermarkLabel = new Label
+        layout.Controls.Add(heroCard, 0, 0);
+        layout.Controls.Add(profileCard, 0, 1);
+        layout.Controls.Add(optimizeCard, 0, 2);
+        layout.Controls.Add(actionCard, 0, 3);
+        layout.Controls.Add(metricsCard, 0, 4);
+
+        var mainStack = new TableLayoutPanel
         {
-            Text = SignatureText,
             Dock = DockStyle.Fill,
-            TextAlign = ContentAlignment.MiddleCenter,
-            ForeColor = Color.FromArgb(10, 0, 224, 255),
-            BackColor = Color.Transparent,
-            Font = new Font("Segoe UI Semibold", 20F, FontStyle.Bold | FontStyle.Italic, GraphicsUnit.Point)
+            ColumnCount = 1,
+            RowCount = 2,
+            BackColor = Color.Transparent
         };
-        statusContainer.Controls.Add(watermarkLabel);
-        statusContainer.Controls.Add(_lblStatus);
+        mainStack.RowStyles.Add(new RowStyle(SizeType.Absolute, 604F));
+        mainStack.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+        mainStack.Controls.Add(layout, 0, 0);
+        mainStack.Controls.Add(logsCard, 0, 1);
 
-        _lblSignature = new Label
-        {
-            Text = SignatureText,
-            Dock = DockStyle.Bottom,
-            Height = 24,
-            TextAlign = ContentAlignment.MiddleRight,
-            ForeColor = Color.FromArgb(88, 236, 255),
-            BackColor = Color.Transparent,
-            Font = new Font("Segoe UI Semibold", 9F, FontStyle.Italic, GraphicsUnit.Point)
-        };
-        statusContainer.Controls.Add(_lblSignature);
-
-        contentPanel.Controls.Add(_lblSubtitle, 0, 0);
-        contentPanel.Controls.Add(headerSignatureLabel, 0, 1);
-        contentPanel.Controls.Add(profileHost, 0, 2);
-        contentPanel.Controls.Add(optimizePanel, 0, 3);
-        contentPanel.Controls.Add(bottomButtonsHost, 0, 4);
-        contentPanel.Controls.Add(adminHost, 0, 5);
-        contentPanel.Controls.Add(logsHost, 0, 6);
-        contentPanel.Controls.Add(statusContainer, 0, 7);
-
-        shellPanel.Controls.Add(contentPanel);
-        shellPanel.Controls.Add(topActionsHost);
-        shellPanel.Controls.Add(titleLabel);
-        shellPanel.Controls.Add(_accentBar);
-
-        Controls.Add(shellPanel);
+        root.Controls.Add(mainStack);
+        Controls.Add(root);
 
         _trayIcon = BuildTrayIcon();
-
+        LoadEmbeddedLogo();
         LoadAdminStatus();
         LoadProfile();
         RefreshRecommendation();
@@ -439,6 +257,290 @@ public class MainForm : Form
         Shown += MainForm_Shown;
         Resize += MainForm_Resize;
         FormClosing += MainForm_FormClosing;
+    }
+
+    private Panel BuildTopBar(Button btnAbout, Button btnAutoProfile, Button btnClearLog)
+    {
+        var title = new Label
+        {
+            Text = "FF Boost",
+            AutoSize = true,
+            ForeColor = Color.FromArgb(238, 243, 255),
+            BackColor = Color.Transparent,
+            Font = new Font("Segoe UI Semibold", 14F, FontStyle.Bold, GraphicsUnit.Point),
+            Location = new Point(0, 7)
+        };
+
+        var panel = new Panel
+        {
+            Dock = DockStyle.Fill,
+            BackColor = Color.Transparent,
+            Margin = new Padding(0, 0, 0, 6)
+        };
+        panel.Controls.Add(title);
+        panel.Controls.Add(btnAbout);
+        panel.Controls.Add(btnAutoProfile);
+        panel.Controls.Add(btnClearLog);
+        panel.Resize += (_, _) =>
+        {
+            btnAbout.Location = new Point(Math.Max(0, panel.Width - btnAbout.Width), 4);
+            btnAutoProfile.Location = new Point(Math.Max(0, btnAbout.Left - btnAutoProfile.Width - 8), 4);
+            btnClearLog.Location = new Point(Math.Max(0, btnAutoProfile.Left - btnClearLog.Width - 8), 4);
+        };
+        return panel;
+    }
+
+    private Control BuildHeroCard()
+    {
+        var card = CreateCard(Color.FromArgb(20, 43, 98), Color.FromArgb(255, 114, 68), new Padding(0));
+        card.Margin = new Padding(0, 0, 0, 8);
+
+        var inner = new Panel
+        {
+            Dock = DockStyle.Fill,
+            BackColor = Color.Transparent
+        };
+
+        inner.Controls.Add(_logoBox);
+        card.Controls.Add(inner);
+        return card;
+    }
+
+    private Control BuildProfileCard()
+    {
+        var label = new Label
+        {
+            Text = "Perfil",
+            Width = 110,
+            ForeColor = Color.FromArgb(88, 205, 255),
+            BackColor = Color.Transparent,
+            Font = new Font("Segoe UI", 11.5F, FontStyle.Regular, GraphicsUnit.Point),
+            TextAlign = ContentAlignment.MiddleLeft
+        };
+
+        var valueFrame = new NeonPanel
+        {
+            Size = new Size(530, 42),
+            BackColor = Color.Transparent,
+            BorderColor = Color.FromArgb(65, 167, 255),
+            FillTop = Color.FromArgb(11, 18, 38),
+            FillBottom = Color.FromArgb(7, 12, 26),
+            Padding = new Padding(12, 4, 12, 4)
+        };
+        valueFrame.Controls.Add(_cmbProfile);
+        valueFrame.Resize += (_, _) =>
+        {
+            _cmbProfile.Location = new Point(valueFrame.Width - _cmbProfile.Width - 16, Math.Max(0, (valueFrame.Height - _cmbProfile.Height) / 2));
+        };
+
+        var host = new Panel
+        {
+            Dock = DockStyle.Fill,
+            BackColor = Color.Transparent
+        };
+        host.Controls.Add(_chkFreeFireMode);
+        host.Controls.Add(valueFrame);
+        host.Controls.Add(label);
+        host.Resize += (_, _) =>
+        {
+            valueFrame.Location = new Point(Math.Max(0, (host.Width - valueFrame.Width) / 2), 10);
+            label.Location = new Point(valueFrame.Left + 16, 9);
+        };
+
+        return host;
+    }
+
+    private Control BuildOptimizeCard()
+    {
+        var host = new Panel
+        {
+            Dock = DockStyle.Fill,
+            BackColor = Color.Transparent
+        };
+        host.Controls.Add(_btnOptimize);
+        host.Resize += (_, _) =>
+        {
+            _btnOptimize.Location = new Point(
+                Math.Max(0, (host.Width - _btnOptimize.Width) / 2),
+                14);
+        };
+        return host;
+    }
+
+    private Control BuildActionCard(Button btnAllowedApps)
+    {
+        var host = new Panel
+        {
+            Dock = DockStyle.Fill,
+            BackColor = Color.Transparent
+        };
+        host.Controls.Add(btnAllowedApps);
+        host.Controls.Add(_btnRestore);
+        host.Resize += (_, _) =>
+        {
+            const int spacing = 22;
+            var totalWidth = btnAllowedApps.Width + _btnRestore.Width + spacing;
+            var startX = Math.Max(0, (host.Width - totalWidth) / 2);
+            btnAllowedApps.Location = new Point(startX, 12);
+            _btnRestore.Location = new Point(startX + btnAllowedApps.Width + spacing, 12);
+        };
+        return host;
+    }
+
+    private Control BuildMetricsCard()
+    {
+        var metricsLayout = new TableLayoutPanel
+        {
+            Dock = DockStyle.Fill,
+            ColumnCount = 2,
+            RowCount = 1,
+            BackColor = Color.Transparent,
+            Margin = new Padding(0, 2, 0, 8),
+            ColumnStyles =
+            {
+                new ColumnStyle(SizeType.Percent, 50F),
+                new ColumnStyle(SizeType.Percent, 50F)
+            }
+        };
+
+        metricsLayout.Controls.Add(CreateMetricCard("CPU", _lblCpuInfo, Color.FromArgb(54, 196, 255)), 0, 0);
+        metricsLayout.Controls.Add(CreateMetricCard("RAM", _lblRamInfo, Color.FromArgb(90, 194, 255)), 1, 0);
+        return metricsLayout;
+    }
+
+    private Control BuildInfoCard()
+    {
+        var card = CreateCard(Color.FromArgb(38, 84, 178), Color.FromArgb(64, 142, 255), new Padding(12));
+        card.Controls.Add(_lblStatus);
+
+        var infoHost = new Panel
+        {
+            Dock = DockStyle.Top,
+            Height = 78,
+            BackColor = Color.Transparent
+        };
+        infoHost.Controls.Add(_lblRecommendation);
+        infoHost.Controls.Add(_lblBenchmarkInfo);
+        infoHost.Controls.Add(_lblAdminStatus);
+        card.Controls.Add(infoHost);
+        return card;
+    }
+
+    private Control BuildLogsCard()
+    {
+        var card = CreateCard(Color.FromArgb(20, 44, 102), Color.FromArgb(19, 41, 94), new Padding(8, 6, 8, 8));
+        card.Margin = new Padding(0, 0, 0, 0);
+        card.Controls.Add(_lstLogs);
+        return card;
+    }
+
+    private Control CreateMetricCard(string title, Label valueLabel, Color accent)
+    {
+        var card = CreateCard(accent, accent, new Padding(14, 8, 14, 6));
+        card.Margin = new Padding(0, 0, 0, 0);
+
+        var titleLabel = new Label
+        {
+            Dock = DockStyle.Top,
+            Height = 18,
+            Text = $"{title}:",
+            ForeColor = accent,
+            BackColor = Color.Transparent,
+            Font = new Font("Segoe UI Semibold", 9.5F, FontStyle.Bold, GraphicsUnit.Point)
+        };
+
+        card.Controls.Add(valueLabel);
+        card.Controls.Add(titleLabel);
+        return card;
+    }
+
+    private static Label CreateMetricValueLabel(string text) =>
+        new()
+        {
+            Dock = DockStyle.Fill,
+            Text = text,
+            ForeColor = Color.FromArgb(82, 211, 255),
+            BackColor = Color.Transparent,
+            Font = new Font("Segoe UI Semibold", 10.5F, FontStyle.Bold, GraphicsUnit.Point),
+            TextAlign = ContentAlignment.MiddleLeft
+        };
+
+    private static Button CreatePrimaryButton()
+    {
+        var button = new Button
+        {
+            Text = "Otimizar Agora",
+            Width = 446,
+            Height = 54,
+            FlatStyle = FlatStyle.Flat,
+            BackColor = Color.FromArgb(23, 185, 255),
+            ForeColor = Color.White,
+            Cursor = Cursors.Hand,
+            Font = new Font("Segoe UI", 17F, FontStyle.Regular, GraphicsUnit.Point)
+        };
+        button.FlatAppearance.BorderSize = 1;
+        button.FlatAppearance.BorderColor = Color.FromArgb(149, 232, 255);
+        return button;
+    }
+
+    private static Button CreateFrameButton(string text, int width, int height, Color borderColor, Color backColor)
+    {
+        var button = new Button
+        {
+            Text = text,
+            Width = width,
+            Height = height,
+            FlatStyle = FlatStyle.Flat,
+            BackColor = backColor,
+            ForeColor = Color.FromArgb(236, 242, 255),
+            Cursor = Cursors.Hand,
+            Font = new Font("Segoe UI", 11F, FontStyle.Regular, GraphicsUnit.Point)
+        };
+        button.FlatAppearance.BorderSize = 1;
+        button.FlatAppearance.BorderColor = borderColor;
+        return button;
+    }
+
+    private static Button CreateGhostButton(string text, int width, Color borderColor)
+    {
+        var button = new Button
+        {
+            Text = text,
+            Width = width,
+            Height = 32,
+            FlatStyle = FlatStyle.Flat,
+            BackColor = Color.FromArgb(10, 16, 32),
+            ForeColor = Color.FromArgb(221, 231, 255),
+            Cursor = Cursors.Hand,
+            Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold, GraphicsUnit.Point)
+        };
+        button.FlatAppearance.BorderSize = 1;
+        button.FlatAppearance.BorderColor = borderColor;
+        return button;
+    }
+
+    private static NeonPanel CreateCard(Color borderColor, Color glowColor, Padding padding) =>
+        new()
+        {
+            Dock = DockStyle.Fill,
+            Margin = new Padding(0, 0, 0, 10),
+            Padding = padding,
+            BackColor = Color.Transparent,
+            BorderColor = borderColor,
+            GlowColor = glowColor,
+            FillTop = Color.FromArgb(9, 12, 26),
+            FillBottom = Color.FromArgb(5, 8, 20)
+        };
+
+    private void LoadEmbeddedLogo()
+    {
+        using var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("FFBoost.UI.Assets.ffboost-logo.png");
+        if (stream == null)
+            return;
+
+        using var image = Image.FromStream(stream);
+        _logoImage = new Bitmap(image);
+        _logoBox.Image = _logoImage;
     }
 
     private NotifyIcon BuildTrayIcon()
@@ -471,8 +573,8 @@ public class MainForm : Form
             ? "Executando como administrador."
             : "Nao esta como administrador. Alguns processos podem nao fechar.";
         _lblAdminStatus.ForeColor = isAdmin
-            ? Color.FromArgb(120, 255, 180)
-            : Color.FromArgb(255, 215, 120);
+            ? Color.FromArgb(121, 243, 171)
+            : Color.FromArgb(255, 209, 110);
     }
 
     private void LoadProfile()
@@ -492,28 +594,22 @@ public class MainForm : Form
 
     private void ApplyPresetVisual()
     {
-        if (_chkFreeFireMode.Checked)
-        {
-            _accentBar.BackColor = Color.FromArgb(255, 116, 72);
-            _btnOptimize.BackColor = Color.FromArgb(255, 116, 72);
-            _lblSubtitle.Text = "PRESET FREE FIRE + BLUESTACKS // BAIXA LATENCIA";
-            _lblSubtitle.ForeColor = Color.FromArgb(255, 176, 86);
-            _chkFreeFireMode.ForeColor = Color.FromArgb(255, 176, 86);
-            return;
-        }
+        var freeFireEnabled = _chkFreeFireMode.Checked;
+        _btnOptimize.BackColor = freeFireEnabled ? Color.FromArgb(255, 116, 72) : Color.FromArgb(23, 185, 255);
+        _btnOptimize.FlatAppearance.BorderColor = freeFireEnabled ? Color.FromArgb(255, 191, 132) : Color.FromArgb(149, 232, 255);
 
-        _accentBar.BackColor = Color.FromArgb(0, 224, 255);
-        _btnOptimize.BackColor = Color.FromArgb(0, 198, 255);
-        _lblSubtitle.Text = "OTIMIZACAO DE SISTEMA PARA BAIXA LATENCIA";
-        _lblSubtitle.ForeColor = Color.FromArgb(0, 224, 255);
-        _chkFreeFireMode.ForeColor = Color.FromArgb(255, 120, 150);
+        _lblTagline.Text = freeFireEnabled ? "FREE FIRE PRESET. LOW LATENCY." : "MORE FPS. LESS LAG.";
+        _lblSubtitle.Text = freeFireEnabled ? "PRESET FOR FREE FIRE + BLUESTACKS" : "OPTIMIZATION ENGINE FOR LOW LATENCY";
+        _lblSubtitle.ForeColor = freeFireEnabled ? Color.FromArgb(255, 177, 104) : Color.FromArgb(111, 207, 255);
+        _chkFreeFireMode.ForeColor = freeFireEnabled ? Color.FromArgb(255, 196, 120) : Color.FromArgb(255, 166, 113);
+        _lblCpuInfo.ForeColor = freeFireEnabled ? Color.FromArgb(255, 198, 124) : Color.FromArgb(82, 211, 255);
+        _lblRamInfo.ForeColor = freeFireEnabled ? Color.FromArgb(255, 198, 124) : Color.FromArgb(82, 211, 255);
     }
 
     private void RefreshRecommendation()
     {
         var recommendation = _telemetryService.GetRecommendedProfile(_chkFreeFireMode.Checked);
-        _lblRecommendation.Text =
-            $"Recomendacao: {recommendation.RecommendedProfile} | score {recommendation.Score:0.##} | {recommendation.Reason}";
+        _lblRecommendation.Text = $"Recomendacao: {recommendation.RecommendedProfile} | score {recommendation.Score:0.##} | {recommendation.Reason}";
     }
 
     private void ConfigureWatcher()
@@ -589,8 +685,7 @@ public class MainForm : Form
         AddLogs(result.logs);
         _lblCpuInfo.Text = $"CPU: {cpuBefore}% -> {cpuAfter}%";
         _lblRamInfo.Text = $"RAM: {ramBefore} GB -> {ramAfter} GB";
-        _lblBenchmarkInfo.Text =
-            $"Benchmark: score {report.SessionScore:0.##} | media {report.Benchmark.AvgScore:0.##} | delta {report.Benchmark.LastScoreDelta:+0.##;-0.##;0}";
+        _lblBenchmarkInfo.Text = $"Benchmark: score {report.SessionScore:0.##} | media {report.Benchmark.AvgScore:0.##} | delta {report.Benchmark.LastScoreDelta:+0.##;-0.##;0}";
 
         var suggestions = _telemetryService.GetWhitelistSuggestions(runningBefore);
         foreach (var suggestion in suggestions)
@@ -637,8 +732,7 @@ public class MainForm : Form
         }
 
         report.Recommendation = _telemetryService.GetRecommendedProfile(_chkFreeFireMode.Checked);
-        _lblRecommendation.Text =
-            $"Recomendacao: {report.Recommendation.RecommendedProfile} | score {report.Recommendation.Score:0.##} | {report.Recommendation.Reason}";
+        _lblRecommendation.Text = $"Recomendacao: {report.Recommendation.RecommendedProfile} | score {report.Recommendation.Score:0.##} | {report.Recommendation.Reason}";
         AddLogs(new[] { $"Perfil recomendado: {report.Recommendation.RecommendedProfile}" });
 
         if (manualTrigger)
@@ -656,8 +750,8 @@ public class MainForm : Form
 
         if (manualTrigger)
         {
-            _lblCpuInfo.Text = "CPU: --";
-            _lblRamInfo.Text = "RAM: --";
+            _lblCpuInfo.Text = "CPU: -- -> --";
+            _lblRamInfo.Text = "RAM: -- -> --";
         }
     }
 
@@ -705,9 +799,7 @@ public class MainForm : Form
         RefreshRecommendation();
         AddLogs(new[]
         {
-            _chkFreeFireMode.Checked
-                ? "Modo Free Fire + BlueStacks ativado."
-                : "Modo Free Fire + BlueStacks desativado."
+            _chkFreeFireMode.Checked ? "Modo Free Fire + BlueStacks ativado." : "Modo Free Fire + BlueStacks desativado."
         });
     }
 
@@ -715,8 +807,7 @@ public class MainForm : Form
     {
         var recommendation = _telemetryService.GetRecommendedProfile(_chkFreeFireMode.Checked);
         _cmbProfile.SelectedItem = recommendation.RecommendedProfile;
-        _lblRecommendation.Text =
-            $"Recomendacao aplicada: {recommendation.RecommendedProfile} | score {recommendation.Score:0.##} | {recommendation.Reason}";
+        _lblRecommendation.Text = $"Recomendacao aplicada: {recommendation.RecommendedProfile} | score {recommendation.Score:0.##} | {recommendation.Reason}";
         AddLogs(new[] { $"Perfil automatico aplicado: {recommendation.RecommendedProfile}" });
     }
 
@@ -766,6 +857,7 @@ public class MainForm : Form
 
         _watcherService.Dispose();
         _trayIcon.Visible = false;
+        _logoImage?.Dispose();
         UnregisterHotKey(Handle, HotkeyIdToggle);
     }
 
@@ -799,17 +891,91 @@ public class MainForm : Form
     }
 }
 
-internal sealed class GradientPanel : Panel
+internal sealed class SciFiPanel : Panel
 {
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-    public Color ColorTop { get; set; } = Color.Black;
+    public Color BorderGlowLeft { get; set; } = Color.FromArgb(40, 88, 255);
 
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-    public Color ColorBottom { get; set; } = Color.Black;
+    public Color BorderGlowRight { get; set; } = Color.FromArgb(255, 102, 68);
 
     protected override void OnPaintBackground(PaintEventArgs e)
     {
-        using var brush = new LinearGradientBrush(ClientRectangle, ColorTop, ColorBottom, LinearGradientMode.Vertical);
-        e.Graphics.FillRectangle(brush, ClientRectangle);
+        e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+
+        using var bg = new LinearGradientBrush(ClientRectangle, Color.FromArgb(4, 8, 18), Color.FromArgb(10, 8, 24), LinearGradientMode.Vertical);
+        e.Graphics.FillRectangle(bg, ClientRectangle);
+
+        DrawGlow(e.Graphics, new Rectangle(-120, 120, 380, 380), Color.FromArgb(80, 0, 136, 255));
+        DrawGlow(e.Graphics, new Rectangle(Width - 330, 50, 340, 340), Color.FromArgb(75, 255, 88, 32));
+        DrawGlow(e.Graphics, new Rectangle(Width / 2 - 170, 180, 340, 180), Color.FromArgb(42, 255, 126, 0));
+        DrawBorder(e.Graphics);
+        DrawParticles(e.Graphics);
+    }
+
+    private void DrawBorder(Graphics graphics)
+    {
+        using var leftPen = new Pen(BorderGlowLeft, 2F);
+        using var rightPen = new Pen(BorderGlowRight, 2F);
+        graphics.DrawLine(leftPen, 0, 0, 0, Height - 1);
+        graphics.DrawLine(leftPen, 0, Height - 2, Width / 2, Height - 2);
+        graphics.DrawLine(rightPen, Width - 1, 0, Width - 1, Height - 1);
+        graphics.DrawLine(rightPen, Width / 2, Height - 2, Width - 1, Height - 2);
+    }
+
+    private static void DrawGlow(Graphics graphics, Rectangle bounds, Color color)
+    {
+        using var path = new GraphicsPath();
+        path.AddEllipse(bounds);
+        using var brush = new PathGradientBrush(path) { CenterColor = color, SurroundColors = new[] { Color.Transparent } };
+        graphics.FillEllipse(brush, bounds);
+    }
+
+    private void DrawParticles(Graphics graphics)
+    {
+        var blue = Color.FromArgb(88, 54, 194, 255);
+        var orange = Color.FromArgb(88, 255, 108, 44);
+
+        for (var i = 0; i < 18; i++)
+        {
+            var x = (37 * i) % Math.Max(1, Width - 8);
+            var y = (61 * i) % Math.Max(1, Height - 8);
+            using var brush = new SolidBrush(i % 2 == 0 ? blue : orange);
+            graphics.FillEllipse(brush, x, y, 2 + (i % 3), 2 + (i % 3));
+        }
+    }
+}
+
+internal sealed class NeonPanel : Panel
+{
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+    public Color BorderColor { get; set; } = Color.FromArgb(70, 180, 255);
+
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+    public Color GlowColor { get; set; } = Color.FromArgb(70, 180, 255);
+
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+    public Color FillTop { get; set; } = Color.FromArgb(12, 16, 34);
+
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+    public Color FillBottom { get; set; } = Color.FromArgb(5, 8, 20);
+
+    public NeonPanel()
+    {
+        DoubleBuffered = true;
+    }
+
+    protected override void OnPaintBackground(PaintEventArgs e)
+    {
+        e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+
+        var outer = new Rectangle(0, 0, Math.Max(0, Width - 1), Math.Max(0, Height - 1));
+        using var fill = new LinearGradientBrush(ClientRectangle, FillTop, FillBottom, LinearGradientMode.Vertical);
+        e.Graphics.FillRectangle(fill, outer);
+
+        using var glowPen = new Pen(Color.FromArgb(72, GlowColor), 3F);
+        using var borderPen = new Pen(BorderColor, 1.2F);
+        e.Graphics.DrawRectangle(glowPen, 1, 1, Math.Max(0, Width - 3), Math.Max(0, Height - 3));
+        e.Graphics.DrawRectangle(borderPen, 0, 0, Math.Max(0, Width - 1), Math.Max(0, Height - 1));
     }
 }

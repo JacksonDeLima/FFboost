@@ -1,3 +1,0 @@
-C:\Developor\FFboost\dist\publish_v4_2_layout_fix\config.json
-C:\Developor\FFboost\dist\publish_v4_2_layout_fix\FFBoost.Core.pdb
-C:\Developor\FFboost\dist\publish_v4_2_layout_fix\FFBoost.exe

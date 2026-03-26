@@ -1,14 +1,16 @@
+using System.ComponentModel;
+using System.Drawing.Drawing2D;
 using System.Reflection;
 
 namespace FFBoost.Setup;
 
 public class SetupForm : Form
 {
-    private const string SignatureText = "\u6587\uFF29\uFF4C\uFF55\uFF53\uFF49\uFF4F\uFF4E";
-
     private readonly Label _statusLabel;
     private readonly Button _installButton;
     private readonly Button _uninstallButton;
+    private readonly PictureBox _logoBox;
+    private Image? _logoImage;
 
     public SetupForm()
     {
@@ -17,96 +19,59 @@ public class SetupForm : Form
         FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox = false;
         MinimizeBox = false;
-        ClientSize = new Size(560, 380);
-        BackColor = Color.FromArgb(10, 14, 24);
+        ClientSize = new Size(620, 500);
+        BackColor = Color.FromArgb(4, 8, 18);
         ForeColor = Color.White;
         Font = new Font("Segoe UI", 10F, FontStyle.Regular, GraphicsUnit.Point);
+        Padding = new Padding(12);
 
-        var accentBar = new Panel
+        _logoBox = new PictureBox
         {
             Dock = DockStyle.Top,
-            Height = 4,
-            BackColor = Color.FromArgb(0, 224, 255)
-        };
-
-        var titleLabel = new Label
-        {
-            Dock = DockStyle.Top,
-            Height = 64,
-            Text = "FF Boost",
-            TextAlign = ContentAlignment.MiddleCenter,
-            Font = new Font("Segoe UI Semibold", 28F, FontStyle.Bold, GraphicsUnit.Point),
-            ForeColor = Color.FromArgb(244, 247, 255)
-        };
-
-        var headerSignatureLabel = new Label
-        {
-            Dock = DockStyle.Top,
-            Height = 22,
-            Text = SignatureText,
-            TextAlign = ContentAlignment.MiddleCenter,
-            Font = new Font("Segoe UI Semibold", 10F, FontStyle.Italic, GraphicsUnit.Point),
-            ForeColor = Color.FromArgb(86, 239, 255)
+            Height = 180,
+            BackColor = Color.Transparent,
+            SizeMode = PictureBoxSizeMode.Zoom
         };
 
         var subtitleLabel = new Label
         {
             Dock = DockStyle.Top,
-            Height = 30,
-            Text = "INSTALADOR GAMER",
+            Height = 34,
+            Text = "INSTALADOR FF BOOST PRO",
             TextAlign = ContentAlignment.MiddleCenter,
-            Font = new Font("Segoe UI Semibold", 10F, FontStyle.Bold, GraphicsUnit.Point),
-            ForeColor = Color.FromArgb(0, 224, 255)
+            Font = new Font("Segoe UI Semibold", 16F, FontStyle.Bold, GraphicsUnit.Point),
+            ForeColor = Color.FromArgb(244, 247, 255),
+            BackColor = Color.Transparent
         };
 
         var infoLabel = new Label
         {
             Dock = DockStyle.Top,
-            Height = 78,
-            Padding = new Padding(32, 12, 32, 0),
+            Height = 54,
+            Padding = new Padding(24, 6, 24, 0),
             TextAlign = ContentAlignment.TopCenter,
             Text = "Instala ou remove o FF Boost em %LocalAppData%\\FFBoost e gerencia o atalho da area de trabalho.",
-            ForeColor = Color.FromArgb(202, 213, 240)
+            ForeColor = Color.FromArgb(202, 213, 240),
+            BackColor = Color.Transparent
         };
 
-        _installButton = new Button
-        {
-            Text = "Instalar FF Boost",
-            Width = 210,
-            Height = 52,
-            BackColor = Color.FromArgb(0, 198, 255),
-            ForeColor = Color.White,
-            FlatStyle = FlatStyle.Flat,
-            Font = new Font("Segoe UI Semibold", 12F, FontStyle.Bold, GraphicsUnit.Point),
-            Cursor = Cursors.Hand
-        };
-        _installButton.FlatAppearance.BorderSize = 0;
+        _installButton = CreateButton("Instalar FF Boost", 230, 56, Color.FromArgb(23, 185, 255), Color.FromArgb(149, 232, 255));
         _installButton.Click += InstallButton_Click;
 
-        _uninstallButton = new Button
-        {
-            Text = "Desinstalar",
-            Width = 170,
-            Height = 44,
-            BackColor = Color.FromArgb(18, 26, 46),
-            ForeColor = Color.White,
-            FlatStyle = FlatStyle.Flat,
-            Font = new Font("Segoe UI Semibold", 10F, FontStyle.Bold, GraphicsUnit.Point),
-            Cursor = Cursors.Hand
-        };
-        _uninstallButton.FlatAppearance.BorderColor = Color.FromArgb(255, 90, 95);
+        _uninstallButton = CreateButton("Desinstalar", 190, 48, Color.FromArgb(24, 10, 22), Color.FromArgb(255, 90, 95));
         _uninstallButton.Click += UninstallButton_Click;
 
         var buttonHost = new Panel
         {
             Dock = DockStyle.Top,
-            Height = 88
+            Height = 88,
+            BackColor = Color.Transparent
         };
         buttonHost.Controls.Add(_installButton);
         buttonHost.Controls.Add(_uninstallButton);
         buttonHost.Resize += (_, _) =>
         {
-            const int spacing = 14;
+            const int spacing = 18;
             var totalWidth = _installButton.Width + _uninstallButton.Width + spacing;
             var startX = Math.Max(0, (buttonHost.Width - totalWidth) / 2);
             _installButton.Location = new Point(startX, Math.Max(0, (buttonHost.Height - _installButton.Height) / 2));
@@ -116,51 +81,83 @@ public class SetupForm : Form
         _statusLabel = new Label
         {
             Dock = DockStyle.Fill,
-            Padding = new Padding(24, 14, 24, 14),
+            Padding = new Padding(24, 16, 24, 16),
             Text = "Pronto para instalar ou desinstalar.",
             TextAlign = ContentAlignment.TopLeft,
-            BorderStyle = BorderStyle.FixedSingle,
-            BackColor = Color.FromArgb(14, 21, 38),
+            BackColor = Color.Transparent,
             ForeColor = Color.FromArgb(235, 241, 255),
             Font = new Font("Consolas", 10.5F, FontStyle.Regular, GraphicsUnit.Point)
         };
 
-        var signatureLabel = new Label
+        var heroCard = new NeonPanel
         {
-            Dock = DockStyle.Bottom,
-            Height = 24,
-            Text = SignatureText,
-            TextAlign = ContentAlignment.MiddleRight,
-            ForeColor = Color.FromArgb(88, 236, 255),
-            Font = new Font("Segoe UI Semibold", 9F, FontStyle.Italic, GraphicsUnit.Point)
+            Dock = DockStyle.Top,
+            Height = 274,
+            BorderColor = Color.FromArgb(60, 181, 255),
+            GlowColor = Color.FromArgb(255, 107, 70),
+            FillTop = Color.FromArgb(9, 12, 26),
+            FillBottom = Color.FromArgb(5, 8, 20),
+            Padding = new Padding(12)
         };
+        heroCard.Controls.Add(infoLabel);
+        heroCard.Controls.Add(subtitleLabel);
+        heroCard.Controls.Add(_logoBox);
 
-        var watermarkLabel = new Label
-        {
-            Dock = DockStyle.Fill,
-            Text = SignatureText,
-            TextAlign = ContentAlignment.MiddleCenter,
-            ForeColor = Color.FromArgb(18, 0, 224, 255),
-            BackColor = Color.Transparent,
-            Font = new Font("Segoe UI Semibold", 28F, FontStyle.Bold | FontStyle.Italic, GraphicsUnit.Point)
-        };
-
-        var statusHost = new Panel
+        var statusCard = new NeonPanel
         {
             Dock = DockStyle.Fill,
-            Padding = new Padding(24, 10, 24, 18)
+            BorderColor = Color.FromArgb(52, 103, 204),
+            GlowColor = Color.FromArgb(52, 103, 204),
+            FillTop = Color.FromArgb(9, 12, 26),
+            FillBottom = Color.FromArgb(5, 8, 20),
+            Padding = new Padding(10)
         };
-        statusHost.Controls.Add(watermarkLabel);
-        statusHost.Controls.Add(_statusLabel);
+        statusCard.Controls.Add(_statusLabel);
 
-        Controls.Add(statusHost);
-        Controls.Add(signatureLabel);
-        Controls.Add(buttonHost);
-        Controls.Add(infoLabel);
-        Controls.Add(subtitleLabel);
-        Controls.Add(headerSignatureLabel);
-        Controls.Add(titleLabel);
-        Controls.Add(accentBar);
+        var shell = new SciFiPanel
+        {
+            Dock = DockStyle.Fill,
+            Padding = new Padding(14),
+            BorderGlowLeft = Color.FromArgb(40, 88, 255),
+            BorderGlowRight = Color.FromArgb(255, 102, 68)
+        };
+        shell.Controls.Add(statusCard);
+        shell.Controls.Add(buttonHost);
+        shell.Controls.Add(heroCard);
+
+        Controls.Add(shell);
+
+        LoadEmbeddedLogo();
+        FormClosed += (_, _) => _logoImage?.Dispose();
+    }
+
+    private static Button CreateButton(string text, int width, int height, Color backColor, Color borderColor)
+    {
+        var button = new Button
+        {
+            Text = text,
+            Width = width,
+            Height = height,
+            BackColor = backColor,
+            ForeColor = Color.White,
+            FlatStyle = FlatStyle.Flat,
+            Font = new Font("Segoe UI Semibold", 12F, FontStyle.Bold, GraphicsUnit.Point),
+            Cursor = Cursors.Hand
+        };
+        button.FlatAppearance.BorderSize = 1;
+        button.FlatAppearance.BorderColor = borderColor;
+        return button;
+    }
+
+    private void LoadEmbeddedLogo()
+    {
+        using var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("Assets.ffboost-logo.png");
+        if (stream == null)
+            return;
+
+        using var image = Image.FromStream(stream);
+        _logoImage = new Bitmap(image);
+        _logoBox.Image = _logoImage;
     }
 
     private void InstallButton_Click(object? sender, EventArgs e)
@@ -215,14 +212,10 @@ public class SetupForm : Form
                 "FF Boost.lnk");
 
             if (File.Exists(desktopShortcut))
-            {
                 File.Delete(desktopShortcut);
-            }
 
             if (Directory.Exists(targetDir))
-            {
                 Directory.Delete(targetDir, true);
-            }
 
             _statusLabel.Text = "Desinstalacao concluida." + Environment.NewLine +
                                 "Arquivos removidos de %LocalAppData%\\FFBoost.";
@@ -276,5 +269,76 @@ public class SetupForm : Form
         shortcut.WorkingDirectory = targetDir;
         shortcut.IconLocation = targetExe;
         shortcut.Save();
+    }
+}
+
+internal sealed class SciFiPanel : Panel
+{
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+    public Color BorderGlowLeft { get; set; } = Color.FromArgb(40, 88, 255);
+
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+    public Color BorderGlowRight { get; set; } = Color.FromArgb(255, 102, 68);
+
+    protected override void OnPaintBackground(PaintEventArgs e)
+    {
+        e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+
+        using var bg = new LinearGradientBrush(ClientRectangle, Color.FromArgb(4, 8, 18), Color.FromArgb(10, 8, 24), LinearGradientMode.Vertical);
+        e.Graphics.FillRectangle(bg, ClientRectangle);
+        DrawGlow(e.Graphics, new Rectangle(-120, 120, 380, 380), Color.FromArgb(80, 0, 136, 255));
+        DrawGlow(e.Graphics, new Rectangle(Width - 330, 50, 340, 340), Color.FromArgb(75, 255, 88, 32));
+        DrawBorder(e.Graphics);
+    }
+
+    private void DrawBorder(Graphics graphics)
+    {
+        using var leftPen = new Pen(BorderGlowLeft, 2F);
+        using var rightPen = new Pen(BorderGlowRight, 2F);
+        graphics.DrawLine(leftPen, 0, 0, 0, Height - 1);
+        graphics.DrawLine(leftPen, 0, Height - 2, Width / 2, Height - 2);
+        graphics.DrawLine(rightPen, Width - 1, 0, Width - 1, Height - 1);
+        graphics.DrawLine(rightPen, Width / 2, Height - 2, Width - 1, Height - 2);
+    }
+
+    private static void DrawGlow(Graphics graphics, Rectangle bounds, Color color)
+    {
+        using var path = new GraphicsPath();
+        path.AddEllipse(bounds);
+        using var brush = new PathGradientBrush(path) { CenterColor = color, SurroundColors = new[] { Color.Transparent } };
+        graphics.FillEllipse(brush, bounds);
+    }
+}
+
+internal sealed class NeonPanel : Panel
+{
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+    public Color BorderColor { get; set; } = Color.FromArgb(70, 180, 255);
+
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+    public Color GlowColor { get; set; } = Color.FromArgb(70, 180, 255);
+
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+    public Color FillTop { get; set; } = Color.FromArgb(12, 16, 34);
+
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+    public Color FillBottom { get; set; } = Color.FromArgb(5, 8, 20);
+
+    public NeonPanel()
+    {
+        DoubleBuffered = true;
+    }
+
+    protected override void OnPaintBackground(PaintEventArgs e)
+    {
+        e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+
+        using var fill = new LinearGradientBrush(ClientRectangle, FillTop, FillBottom, LinearGradientMode.Vertical);
+        e.Graphics.FillRectangle(fill, ClientRectangle);
+
+        using var glowPen = new Pen(Color.FromArgb(72, GlowColor), 3F);
+        using var borderPen = new Pen(BorderColor, 1.2F);
+        e.Graphics.DrawRectangle(glowPen, 1, 1, Math.Max(0, Width - 3), Math.Max(0, Height - 3));
+        e.Graphics.DrawRectangle(borderPen, 0, 0, Math.Max(0, Width - 1), Math.Max(0, Height - 1));
     }
 }

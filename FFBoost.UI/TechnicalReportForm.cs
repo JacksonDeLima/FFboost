@@ -15,9 +15,10 @@ public class TechnicalReportForm : Form
         MinimizeBox = false;
         ShowInTaskbar = false;
         ClientSize = new Size(560, 440);
-        BackColor = Color.FromArgb(9, 13, 24);
+        BackColor = Color.FromArgb(4, 8, 18);
         ForeColor = Color.White;
         Font = new Font("Segoe UI", 10F, FontStyle.Regular, GraphicsUnit.Point);
+        Padding = new Padding(12);
 
         var titleLabel = new Label
         {
@@ -26,7 +27,8 @@ public class TechnicalReportForm : Form
             Text = "Relatorio Tecnico Final",
             TextAlign = ContentAlignment.MiddleCenter,
             Font = new Font("Segoe UI Semibold", 20F, FontStyle.Bold, GraphicsUnit.Point),
-            ForeColor = Color.FromArgb(0, 224, 255)
+            ForeColor = Color.FromArgb(0, 224, 255),
+            BackColor = Color.Transparent
         };
 
         var signatureLabel = new Label
@@ -36,6 +38,7 @@ public class TechnicalReportForm : Form
             Text = SignatureText,
             TextAlign = ContentAlignment.MiddleCenter,
             ForeColor = Color.FromArgb(86, 239, 255),
+            BackColor = Color.Transparent,
             Font = new Font("Segoe UI Semibold", 10F, FontStyle.Italic, GraphicsUnit.Point)
         };
 
@@ -43,8 +46,7 @@ public class TechnicalReportForm : Form
         {
             Dock = DockStyle.Fill,
             Padding = new Padding(24, 16, 24, 16),
-            BackColor = Color.FromArgb(14, 21, 38),
-            BorderStyle = BorderStyle.FixedSingle,
+            BackColor = Color.Transparent,
             ForeColor = Color.FromArgb(235, 241, 255),
             Font = new Font("Consolas", 10.5F, FontStyle.Regular, GraphicsUnit.Point),
             Text = BuildText(report)
@@ -55,17 +57,19 @@ public class TechnicalReportForm : Form
             Text = "Fechar",
             Width = 140,
             Height = 40,
-            BackColor = Color.FromArgb(0, 198, 255),
+            BackColor = Color.FromArgb(23, 185, 255),
             ForeColor = Color.White,
             FlatStyle = FlatStyle.Flat
         };
-        btnClose.FlatAppearance.BorderSize = 0;
+        btnClose.FlatAppearance.BorderSize = 1;
+        btnClose.FlatAppearance.BorderColor = Color.FromArgb(149, 232, 255);
         btnClose.Click += (_, _) => Close();
 
         var buttonHost = new Panel
         {
             Dock = DockStyle.Bottom,
-            Height = 70
+            Height = 70,
+            BackColor = Color.Transparent
         };
         buttonHost.Controls.Add(btnClose);
         buttonHost.Resize += (_, _) =>
@@ -75,10 +79,29 @@ public class TechnicalReportForm : Form
                 Math.Max(0, (buttonHost.Height - btnClose.Height) / 2));
         };
 
-        Controls.Add(contentLabel);
-        Controls.Add(buttonHost);
-        Controls.Add(signatureLabel);
-        Controls.Add(titleLabel);
+        var shell = new SciFiPanel
+        {
+            Dock = DockStyle.Fill,
+            BorderGlowLeft = Color.FromArgb(40, 88, 255),
+            BorderGlowRight = Color.FromArgb(255, 102, 68),
+            Padding = new Padding(14)
+        };
+
+        var card = new NeonPanel
+        {
+            Dock = DockStyle.Fill,
+            BorderColor = Color.FromArgb(60, 181, 255),
+            GlowColor = Color.FromArgb(255, 107, 70),
+            FillTop = Color.FromArgb(9, 12, 26),
+            FillBottom = Color.FromArgb(5, 8, 20)
+        };
+
+        card.Controls.Add(contentLabel);
+        card.Controls.Add(buttonHost);
+        card.Controls.Add(signatureLabel);
+        card.Controls.Add(titleLabel);
+        shell.Controls.Add(card);
+        Controls.Add(shell);
     }
 
     private static string BuildText(TechnicalReport report)
