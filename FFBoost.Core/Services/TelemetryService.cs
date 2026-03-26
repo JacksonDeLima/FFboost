@@ -26,6 +26,84 @@ public class TelemetryService
         File.WriteAllText(_telemetryPath, JsonSerializer.Serialize(history, JsonOptions));
     }
 
+    public List<TelemetryEntry> GetHistory()
+    {
+        return LoadHistory();
+    }
+
+    public BenchmarkSummary BuildBenchmarkSummary(string profile, bool freeFireModeEnabled, double currentScore)
+    {
+        var matchingHistory = LoadHistory()
+            .Where(x =>
+                x.Profile.Equals(profile, StringComparison.OrdinalIgnoreCase) &&
+                x.FreeFireModeEnabled == freeFireModeEnabled)
+            .OrderByDescending(x => x.Timestamp)
+            .Take(20)
+            .ToList();
+
+        if (matchingHistory.Count == 0)
+        {
+            return new BenchmarkSummary
+            {
+                SessionCount = 0,
+                LastScoreDelta = currentScore
+            };
+        }
+
+        var avgCpuGain = matchingHistory.Average(x => x.CpuBefore - x.CpuAfter);
+        var avgRamGain = matchingHistory.Average(x => x.RamBefore - x.RamAfter);
+        var avgScore = matchingHistory.Average(x => x.SessionScore);
+
+        return new BenchmarkSummary
+        {
+            SessionCount = matchingHistory.Count,
+            AvgCpuGain = Math.Round(avgCpuGain, 2),
+            AvgRamGain = Math.Round(avgRamGain, 2),
+            AvgScore = Math.Round(avgScore, 2),
+            LastScoreDelta = Math.Round(currentScore - avgScore, 2)
+        };
+    }
+
+    public ProfileRecommendation GetRecommendedProfile(bool preferFreeFireMode)
+    {
+        var history = LoadHistory();
+        var candidateGroups = history
+            .Where(x => x.FreeFireModeEnabled == preferFreeFireMode)
+            .GroupBy(x => x.Profile, StringComparer.OrdinalIgnoreCase)
+            .Select(group => new
+            {
+                Profile = group.Key,
+                Count = group.Count(),
+                Score = group.Average(x => x.SessionScore),
+                CpuGain = group.Average(x => x.CpuBefore - x.CpuAfter),
+                RamGain = group.Average(x => x.RamBefore - x.RamAfter)
+            })
+            .Where(x => x.Count >= 2)
+            .OrderByDescending(x => x.Score)
+            .ToList();
+
+        if (candidateGroups.Count == 0)
+        {
+            return new ProfileRecommendation
+            {
+                RecommendedProfile = "Seguro",
+                UseFreeFirePreset = preferFreeFireMode,
+                Reason = preferFreeFireMode
+                    ? "Sem historico suficiente no preset Free Fire. Mantendo Seguro."
+                    : "Sem historico suficiente. Mantendo Seguro."
+            };
+        }
+
+        var best = candidateGroups[0];
+        return new ProfileRecommendation
+        {
+            RecommendedProfile = best.Profile,
+            UseFreeFirePreset = preferFreeFireMode,
+            Score = Math.Round(best.Score, 2),
+            Reason = $"Historico local: CPU {best.CpuGain:0.##}% e RAM {best.RamGain:0.##} GB com media {best.Score:0.##}."
+        };
+    }
+
     public List<string> GetWhitelistSuggestions(IEnumerable<string> runningProcesses)
     {
         var running = runningProcesses.ToHashSet(StringComparer.OrdinalIgnoreCase);

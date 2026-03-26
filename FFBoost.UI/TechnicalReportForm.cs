@@ -89,6 +89,8 @@ public class TechnicalReportForm : Form
             $"Modo Free Fire: {YesNo(report.FreeFireModeEnabled)}",
             $"CPU: {report.CpuBefore}% -> {report.CpuAfter}%",
             $"RAM: {report.RamBefore} GB -> {report.RamAfter} GB",
+            $"Score da sessao: {report.SessionScore:0.##}",
+            $"Benchmark local: {report.Benchmark.SessionCount} sessao(oes), media {report.Benchmark.AvgScore:0.##}, delta {report.Benchmark.LastScoreDelta:+0.##;-0.##;0}",
             $"Processos: {report.ProcessesBefore} -> {report.ProcessesAfter}",
             $"Plano de acao: kill {report.KillPlanCount}, suspend {report.SuspendPlanCount}",
             $"Encerrados: {report.KilledCount} ({FormatList(report.KilledProcesses)})",
@@ -98,6 +100,8 @@ public class TechnicalReportForm : Form
             $"Timer ajustado: {YesNo(report.TimerResolutionApplied)}",
             $"Plano alto desempenho: {YesNo(report.PowerPlanActivated)}",
             $"Modo gravacao: {YesNo(report.RecordingModeDetected)}",
+            $"Perfil recomendado: {report.Recommendation.RecommendedProfile} / FF {YesNo(report.Recommendation.UseFreeFirePreset)}",
+            $"Motivo: {report.Recommendation.Reason}",
             $"Tempo total: {report.Elapsed.TotalMilliseconds:0} ms",
             $"Sugestoes: {FormatList(report.Suggestions)}"
         });

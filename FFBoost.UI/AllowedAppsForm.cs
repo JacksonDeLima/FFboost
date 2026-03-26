@@ -23,8 +23,8 @@ public class AllowedAppsForm : Form
 
         Text = "Apps Permitidos";
         StartPosition = FormStartPosition.CenterParent;
-        ClientSize = new Size(620, 470);
-        MinimumSize = new Size(620, 470);
+        ClientSize = new Size(700, 590);
+        MinimumSize = new Size(700, 590);
         BackColor = Color.FromArgb(10, 14, 24);
         ForeColor = Color.White;
         Font = new Font("Segoe UI", 10F, FontStyle.Regular, GraphicsUnit.Point);
@@ -54,7 +54,7 @@ public class AllowedAppsForm : Form
             Text = "Apps permitidos",
             ForeColor = Color.FromArgb(0, 224, 255),
             AutoSize = true,
-            Location = new Point(20, 18)
+            Location = new Point(26, 18)
         };
 
         var lblRunning = new Label
@@ -62,13 +62,13 @@ public class AllowedAppsForm : Form
             Text = "Processos em execucao",
             ForeColor = Color.FromArgb(0, 224, 255),
             AutoSize = true,
-            Location = new Point(320, 18)
+            Location = new Point(376, 18)
         };
 
         _lstAllowed = new ListBox
         {
-            Location = new Point(20, 42),
-            Size = new Size(250, 220),
+            Location = new Point(26, 42),
+            Size = new Size(290, 270),
             BackColor = Color.FromArgb(13, 19, 34),
             ForeColor = Color.FromArgb(235, 241, 255),
             BorderStyle = BorderStyle.FixedSingle
@@ -76,8 +76,8 @@ public class AllowedAppsForm : Form
 
         _lstRunning = new ListBox
         {
-            Location = new Point(320, 42),
-            Size = new Size(250, 220),
+            Location = new Point(376, 42),
+            Size = new Size(290, 270),
             BackColor = Color.FromArgb(13, 19, 34),
             ForeColor = Color.FromArgb(235, 241, 255),
             BorderStyle = BorderStyle.FixedSingle
@@ -85,8 +85,8 @@ public class AllowedAppsForm : Form
 
         _txtProcessName = new TextBox
         {
-            Location = new Point(20, 280),
-            Size = new Size(250, 23),
+            Location = new Point(26, 328),
+            Size = new Size(290, 27),
             BackColor = Color.FromArgb(18, 26, 46),
             ForeColor = Color.White,
             BorderStyle = BorderStyle.FixedSingle
@@ -94,8 +94,8 @@ public class AllowedAppsForm : Form
 
         _txtRunningFilter = new TextBox
         {
-            Location = new Point(320, 280),
-            Size = new Size(250, 23),
+            Location = new Point(376, 328),
+            Size = new Size(290, 27),
             BackColor = Color.FromArgb(18, 26, 46),
             ForeColor = Color.White,
             BorderStyle = BorderStyle.FixedSingle,
@@ -106,8 +106,8 @@ public class AllowedAppsForm : Form
         var btnAddManual = new Button
         {
             Text = "Adicionar manualmente",
-            Location = new Point(20, 315),
-            Size = new Size(250, 32),
+            Location = new Point(26, 370),
+            Size = new Size(290, 36),
             BackColor = Color.FromArgb(18, 26, 46),
             ForeColor = Color.White,
             FlatStyle = FlatStyle.Flat
@@ -118,8 +118,8 @@ public class AllowedAppsForm : Form
         var btnAddSelected = new Button
         {
             Text = "Adicionar selecionado",
-            Location = new Point(320, 312),
-            Size = new Size(250, 32),
+            Location = new Point(376, 370),
+            Size = new Size(290, 36),
             BackColor = Color.FromArgb(18, 26, 46),
             ForeColor = Color.White,
             FlatStyle = FlatStyle.Flat
@@ -130,8 +130,8 @@ public class AllowedAppsForm : Form
         var btnRefreshRunning = new Button
         {
             Text = "Atualizar processos",
-            Location = new Point(320, 351),
-            Size = new Size(250, 29),
+            Location = new Point(376, 416),
+            Size = new Size(290, 34),
             BackColor = Color.FromArgb(18, 26, 46),
             ForeColor = Color.White,
             FlatStyle = FlatStyle.Flat
@@ -142,8 +142,8 @@ public class AllowedAppsForm : Form
         var btnRemove = new Button
         {
             Text = "Remover selecionado",
-            Location = new Point(20, 355),
-            Size = new Size(250, 32),
+            Location = new Point(26, 416),
+            Size = new Size(290, 36),
             BackColor = Color.FromArgb(18, 26, 46),
             ForeColor = Color.White,
             FlatStyle = FlatStyle.Flat
@@ -153,8 +153,8 @@ public class AllowedAppsForm : Form
 
         _lblFeedback = new Label
         {
-            Location = new Point(20, 400),
-            Size = new Size(550, 24),
+            Location = new Point(26, 468),
+            Size = new Size(640, 34),
             ForeColor = Color.FromArgb(120, 255, 180),
             Text = "Pronto."
         };

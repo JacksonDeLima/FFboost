@@ -1,0 +1,108 @@
+{
+  "AllowedProcesses": [
+    "action",
+    "BlueStacks",
+    "Discord",
+    "dwm",
+    "explorer",
+    "HD-Frontend",
+    "HD-Player",
+    "medal",
+    "nvcontainer",
+    "NVIDIA Share",
+    "obs64",
+    "streamlabsobs"
+  ],
+  "FreeFireAllowedProcesses": [
+    "action",
+    "BlueStacks",
+    "Discord",
+    "dwm",
+    "explorer",
+    "HD-Frontend",
+    "HD-Player",
+    "medal",
+    "nvcontainer",
+    "NVIDIA Share",
+    "obs64",
+    "streamlabsobs"
+  ],
+  "SafeBlacklist": [
+    "brave",
+    "chrome",
+    "firefox",
+    "msedge",
+    "onedrive",
+    "opera",
+    "spotify",
+    "teams"
+  ],
+  "StrongBlacklist": [
+    "epicgameslauncher",
+    "notion",
+    "steam",
+    "steamwebhelper",
+    "telegram",
+    "whatsapp"
+  ],
+  "UltraBlacklist": [
+    "battle.net",
+    "discordptb",
+    "upc",
+    "uplay",
+    "webex",
+    "zoom"
+  ],
+  "FreeFireSafeBlacklist": [
+    "adobeipcbroker",
+    "brave",
+    "chrome",
+    "firefox",
+    "msedge",
+    "onedrive",
+    "opera",
+    "spotify",
+    "teams"
+  ],
+  "FreeFireStrongBlacklist": [
+    "epicgameslauncher",
+    "galaxyclient",
+    "notion",
+    "riotclientservices",
+    "steam",
+    "steamwebhelper",
+    "telegram",
+    "whatsapp"
+  ],
+  "FreeFireUltraBlacklist": [
+    "battle.net",
+    "discordptb",
+    "ea",
+    "ubisoftconnect",
+    "upc",
+    "uplay",
+    "webex",
+    "zoom"
+  ],
+  "RecordingProcesses": [
+    "action",
+    "medal",
+    "obs64",
+    "streamlabsobs"
+  ],
+  "EmulatorProcesses": [
+    "BlueStacks",
+    "HD-Frontend",
+    "HD-Player"
+  ],
+  "UseHighPerformancePlan": true,
+  "SetEmulatorHighPriority": true,
+  "EnableTimerResolution": true,
+  "EnableAffinityTuning": true,
+  "EnableOverlayDetection": true,
+  "EnableWatcher": true,
+  "TelemetryEnabled": true,
+  "AutoOptimizeOnStartup": true,
+  "EnableFreeFireMode": true,
+  "SelectedProfile": "Seguro"
+}

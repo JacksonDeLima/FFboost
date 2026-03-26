@@ -19,6 +19,9 @@ public class TechnicalReport
     public double CpuAfter { get; set; }
     public double RamBefore { get; set; }
     public double RamAfter { get; set; }
+    public double SessionScore { get; set; }
+    public BenchmarkSummary Benchmark { get; set; } = new();
+    public ProfileRecommendation Recommendation { get; set; } = new();
     public TimeSpan Elapsed { get; set; }
     public List<string> KilledProcesses { get; set; } = new();
     public List<string> SuspendedProcesses { get; set; } = new();

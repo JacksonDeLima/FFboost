@@ -21,14 +21,18 @@ public class MainForm : Form
     private readonly LogFileService _logFileService;
     private readonly TelemetryService _telemetryService;
     private readonly GameWatcherService _watcherService;
+    private readonly Panel _accentBar;
     private readonly Label _lblStatus;
     private readonly Label _lblAdminStatus;
     private readonly Label _lblSignature;
+    private readonly Label _lblSubtitle;
     private readonly ListBox _lstLogs;
     private readonly ComboBox _cmbProfile;
     private readonly CheckBox _chkFreeFireMode;
     private readonly Label _lblCpuInfo;
     private readonly Label _lblRamInfo;
+    private readonly Label _lblBenchmarkInfo;
+    private readonly Label _lblRecommendation;
     private readonly Button _btnOptimize;
     private readonly Button _btnRestore;
     private readonly NotifyIcon _trayIcon;
@@ -39,8 +43,8 @@ public class MainForm : Form
     {
         Text = "FF Boost";
         StartPosition = FormStartPosition.CenterScreen;
-        ClientSize = new Size(740, 670);
-        MinimumSize = new Size(740, 670);
+        ClientSize = new Size(760, 820);
+        MinimumSize = new Size(760, 820);
         BackColor = Color.FromArgb(10, 14, 24);
         ForeColor = Color.White;
         Font = new Font("Segoe UI", 10F, FontStyle.Regular, GraphicsUnit.Point);
@@ -76,7 +80,7 @@ public class MainForm : Form
             BackColor = Color.Transparent
         };
 
-        var subtitleLabel = new Label
+        _lblSubtitle = new Label
         {
             Text = "OTIMIZACAO DE SISTEMA PARA BAIXA LATENCIA",
             Dock = DockStyle.Top,
@@ -162,6 +166,19 @@ public class MainForm : Form
         };
         btnClearLog.FlatAppearance.BorderColor = Color.FromArgb(0, 224, 255);
 
+        var btnAutoProfile = new Button
+        {
+            Text = "Perfil Auto",
+            Width = 110,
+            Height = 34,
+            FlatStyle = FlatStyle.Flat,
+            BackColor = Color.FromArgb(12, 18, 34),
+            ForeColor = Color.FromArgb(255, 196, 120),
+            Cursor = Cursors.Hand
+        };
+        btnAutoProfile.FlatAppearance.BorderColor = Color.FromArgb(255, 146, 72);
+        btnAutoProfile.Click += (_, _) => ApplyRecommendedProfile();
+
         var lblProfile = new Label
         {
             Dock = DockStyle.Left,
@@ -229,6 +246,24 @@ public class MainForm : Form
             Text = "RAM: --"
         };
 
+        _lblBenchmarkInfo = new Label
+        {
+            Dock = DockStyle.Top,
+            Height = 22,
+            ForeColor = Color.FromArgb(255, 196, 120),
+            Font = new Font("Consolas", 9.5F, FontStyle.Regular, GraphicsUnit.Point),
+            Text = "Benchmark: aguardando sessao."
+        };
+
+        _lblRecommendation = new Label
+        {
+            Dock = DockStyle.Top,
+            Height = 22,
+            ForeColor = Color.FromArgb(255, 140, 124),
+            Font = new Font("Consolas", 9.5F, FontStyle.Regular, GraphicsUnit.Point),
+            Text = "Recomendacao: coletando historico local."
+        };
+
         _lstLogs = new ListBox
         {
             Dock = DockStyle.Fill,
@@ -258,7 +293,7 @@ public class MainForm : Form
             ColorBottom = Color.FromArgb(20, 31, 56)
         };
 
-        var accentBar = new Panel
+        _accentBar = new Panel
         {
             Dock = DockStyle.Top,
             Height = 4,
@@ -272,11 +307,13 @@ public class MainForm : Form
             BackColor = Color.Transparent
         };
         topActionsHost.Controls.Add(btnAbout);
+        topActionsHost.Controls.Add(btnAutoProfile);
         topActionsHost.Controls.Add(btnClearLog);
         topActionsHost.Resize += (_, _) =>
         {
             btnAbout.Location = new Point(Math.Max(0, topActionsHost.Width - btnAbout.Width - 10), 2);
-            btnClearLog.Location = new Point(Math.Max(0, topActionsHost.Width - btnAbout.Width - btnClearLog.Width - 18), 2);
+            btnAutoProfile.Location = new Point(Math.Max(0, topActionsHost.Width - btnAbout.Width - btnAutoProfile.Width - 18), 2);
+            btnClearLog.Location = new Point(Math.Max(0, topActionsHost.Width - btnAbout.Width - btnAutoProfile.Width - btnClearLog.Width - 26), 2);
         };
 
         var contentPanel = new TableLayoutPanel
@@ -290,11 +327,11 @@ public class MainForm : Form
         contentPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 28F));
         contentPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 24F));
         contentPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 46F));
-        contentPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 110F));
-        contentPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 62F));
-        contentPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 92F));
+        contentPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 104F));
+        contentPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 58F));
+        contentPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 118F));
         contentPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
-        contentPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 94F));
+        contentPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 110F));
 
         var optimizePanel = new Panel { Dock = DockStyle.Fill, BackColor = Color.Transparent };
         optimizePanel.Controls.Add(_btnOptimize);
@@ -330,11 +367,18 @@ public class MainForm : Form
         };
 
         var adminHost = new Panel { Dock = DockStyle.Fill, BackColor = Color.Transparent };
+        adminHost.Controls.Add(_lblRecommendation);
+        adminHost.Controls.Add(_lblBenchmarkInfo);
         adminHost.Controls.Add(_lblRamInfo);
         adminHost.Controls.Add(_lblCpuInfo);
         adminHost.Controls.Add(_lblAdminStatus);
 
-        var logsHost = new Panel { Dock = DockStyle.Fill, BackColor = Color.Transparent };
+        var logsHost = new Panel
+        {
+            Dock = DockStyle.Fill,
+            BackColor = Color.Transparent,
+            Padding = new Padding(0, 0, 0, 8)
+        };
         logsHost.Controls.Add(_lstLogs);
         logsHost.Controls.Add(lblLogsTitle);
 
@@ -350,9 +394,9 @@ public class MainForm : Form
             Text = SignatureText,
             Dock = DockStyle.Fill,
             TextAlign = ContentAlignment.MiddleCenter,
-            ForeColor = Color.FromArgb(18, 0, 224, 255),
+            ForeColor = Color.FromArgb(10, 0, 224, 255),
             BackColor = Color.Transparent,
-            Font = new Font("Segoe UI Semibold", 26F, FontStyle.Bold | FontStyle.Italic, GraphicsUnit.Point)
+            Font = new Font("Segoe UI Semibold", 20F, FontStyle.Bold | FontStyle.Italic, GraphicsUnit.Point)
         };
         statusContainer.Controls.Add(watermarkLabel);
         statusContainer.Controls.Add(_lblStatus);
@@ -369,7 +413,7 @@ public class MainForm : Form
         };
         statusContainer.Controls.Add(_lblSignature);
 
-        contentPanel.Controls.Add(subtitleLabel, 0, 0);
+        contentPanel.Controls.Add(_lblSubtitle, 0, 0);
         contentPanel.Controls.Add(headerSignatureLabel, 0, 1);
         contentPanel.Controls.Add(profileHost, 0, 2);
         contentPanel.Controls.Add(optimizePanel, 0, 3);
@@ -381,7 +425,7 @@ public class MainForm : Form
         shellPanel.Controls.Add(contentPanel);
         shellPanel.Controls.Add(topActionsHost);
         shellPanel.Controls.Add(titleLabel);
-        shellPanel.Controls.Add(accentBar);
+        shellPanel.Controls.Add(_accentBar);
 
         Controls.Add(shellPanel);
 
@@ -389,6 +433,8 @@ public class MainForm : Form
 
         LoadAdminStatus();
         LoadProfile();
+        RefreshRecommendation();
+        ApplyPresetVisual();
         ConfigureWatcher();
         Shown += MainForm_Shown;
         Resize += MainForm_Resize;
@@ -442,6 +488,32 @@ public class MainForm : Form
             _cmbProfile.SelectedItem = "Seguro";
 
         _chkFreeFireMode.Checked = config.EnableFreeFireMode;
+    }
+
+    private void ApplyPresetVisual()
+    {
+        if (_chkFreeFireMode.Checked)
+        {
+            _accentBar.BackColor = Color.FromArgb(255, 116, 72);
+            _btnOptimize.BackColor = Color.FromArgb(255, 116, 72);
+            _lblSubtitle.Text = "PRESET FREE FIRE + BLUESTACKS // BAIXA LATENCIA";
+            _lblSubtitle.ForeColor = Color.FromArgb(255, 176, 86);
+            _chkFreeFireMode.ForeColor = Color.FromArgb(255, 176, 86);
+            return;
+        }
+
+        _accentBar.BackColor = Color.FromArgb(0, 224, 255);
+        _btnOptimize.BackColor = Color.FromArgb(0, 198, 255);
+        _lblSubtitle.Text = "OTIMIZACAO DE SISTEMA PARA BAIXA LATENCIA";
+        _lblSubtitle.ForeColor = Color.FromArgb(0, 224, 255);
+        _chkFreeFireMode.ForeColor = Color.FromArgb(255, 120, 150);
+    }
+
+    private void RefreshRecommendation()
+    {
+        var recommendation = _telemetryService.GetRecommendedProfile(_chkFreeFireMode.Checked);
+        _lblRecommendation.Text =
+            $"Recomendacao: {recommendation.RecommendedProfile} | score {recommendation.Score:0.##} | {recommendation.Reason}";
     }
 
     private void ConfigureWatcher()
@@ -507,11 +579,18 @@ public class MainForm : Form
         report.RamAfter = ramAfter;
         report.ProcessesBefore = runningBefore.Count;
         report.ProcessesAfter = _optimizer.GetRunningProcesses().Count;
+        report.SessionScore = CalculateSessionScore(report);
+        report.Benchmark = _telemetryService.BuildBenchmarkSummary(
+            _cmbProfile.SelectedItem?.ToString() ?? "Seguro",
+            _chkFreeFireMode.Checked,
+            report.SessionScore);
 
         _lblStatus.Text = result.status;
         AddLogs(result.logs);
         _lblCpuInfo.Text = $"CPU: {cpuBefore}% -> {cpuAfter}%";
         _lblRamInfo.Text = $"RAM: {ramBefore} GB -> {ramAfter} GB";
+        _lblBenchmarkInfo.Text =
+            $"Benchmark: score {report.SessionScore:0.##} | media {report.Benchmark.AvgScore:0.##} | delta {report.Benchmark.LastScoreDelta:+0.##;-0.##;0}";
 
         var suggestions = _telemetryService.GetWhitelistSuggestions(runningBefore);
         foreach (var suggestion in suggestions)
@@ -522,6 +601,8 @@ public class MainForm : Form
             $"Status: {result.status}",
             $"Perfil: {_cmbProfile.SelectedItem}",
             $"Modo FF: {(_chkFreeFireMode.Checked ? "ativo" : "padrao")}",
+            $"Score: {report.SessionScore:0.##}",
+            $"Benchmark delta: {report.Benchmark.LastScoreDelta:+0.##;-0.##;0}",
             $"CPU: {cpuBefore}% -> {cpuAfter}%",
             $"RAM: {ramBefore} GB -> {ramAfter} GB",
             $"Processos: {report.ProcessesBefore} -> {report.ProcessesAfter}",
@@ -542,16 +623,23 @@ public class MainForm : Form
             {
                 Timestamp = DateTime.Now,
                 Profile = _cmbProfile.SelectedItem?.ToString() ?? "Seguro",
+                FreeFireModeEnabled = _chkFreeFireMode.Checked,
                 CpuBefore = cpuBefore,
                 CpuAfter = cpuAfter,
                 RamBefore = ramBefore,
                 RamAfter = ramAfter,
+                SessionScore = report.SessionScore,
                 KilledCount = report.KilledCount,
                 SuspendedCount = report.SuspendedCount,
                 KilledProcesses = report.KilledProcesses,
                 RelaunchedProcesses = suggestions
             });
         }
+
+        report.Recommendation = _telemetryService.GetRecommendedProfile(_chkFreeFireMode.Checked);
+        _lblRecommendation.Text =
+            $"Recomendacao: {report.Recommendation.RecommendedProfile} | score {report.Recommendation.Score:0.##} | {report.Recommendation.Reason}";
+        AddLogs(new[] { $"Perfil recomendado: {report.Recommendation.RecommendedProfile}" });
 
         if (manualTrigger)
         {
@@ -613,12 +701,23 @@ public class MainForm : Form
 
         config.EnableFreeFireMode = _chkFreeFireMode.Checked;
         _configService.Save(config);
+        ApplyPresetVisual();
+        RefreshRecommendation();
         AddLogs(new[]
         {
             _chkFreeFireMode.Checked
                 ? "Modo Free Fire + BlueStacks ativado."
                 : "Modo Free Fire + BlueStacks desativado."
         });
+    }
+
+    private void ApplyRecommendedProfile()
+    {
+        var recommendation = _telemetryService.GetRecommendedProfile(_chkFreeFireMode.Checked);
+        _cmbProfile.SelectedItem = recommendation.RecommendedProfile;
+        _lblRecommendation.Text =
+            $"Recomendacao aplicada: {recommendation.RecommendedProfile} | score {recommendation.Score:0.##} | {recommendation.Reason}";
+        AddLogs(new[] { $"Perfil automatico aplicado: {recommendation.RecommendedProfile}" });
     }
 
     private void TryAutoOptimize()
@@ -688,6 +787,16 @@ public class MainForm : Form
 
     [DllImport("user32.dll", SetLastError = true)]
     private static extern bool UnregisterHotKey(IntPtr hWnd, int id);
+
+    private static double CalculateSessionScore(FFBoost.Core.Models.TechnicalReport report)
+    {
+        var cpuGain = Math.Max(0, report.CpuBefore - report.CpuAfter);
+        var ramGain = Math.Max(0, report.RamBefore - report.RamAfter) * 8;
+        var processGain = Math.Max(0, report.KilledCount * 1.2) + Math.Max(0, report.SuspendedCount * 0.8);
+        var overlayPenalty = report.OverlayCount * 0.5;
+        var freeFireBonus = report.FreeFireModeEnabled ? 2.0 : 0.0;
+        return Math.Round(cpuGain + ramGain + processGain + freeFireBonus - overlayPenalty, 2);
+    }
 }
 
 internal sealed class GradientPanel : Panel

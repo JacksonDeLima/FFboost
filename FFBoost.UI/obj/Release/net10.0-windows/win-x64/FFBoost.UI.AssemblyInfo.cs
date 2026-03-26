@@ -15,7 +15,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCopyrightAttribute("Copyright FF Boost Studio")]
 [assembly: System.Reflection.AssemblyDescriptionAttribute("Otimizador gamer para BlueStacks e Free Fire.")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0-gamer+ef244be7c6815ce3f09df88b3cdec7765ddf3119")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0-gamer+e0af3ec1ac2bafba959ba3426b024dfdcae41198")]
 [assembly: System.Reflection.AssemblyProductAttribute("FF Boost")]
 [assembly: System.Reflection.AssemblyTitleAttribute("FF Boost")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
