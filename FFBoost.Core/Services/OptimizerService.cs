@@ -6,16 +6,6 @@ namespace FFBoost.Core.Services;
 
 public class OptimizerService
 {
-    private static readonly HashSet<string> PreserveDuringRecording = new(StringComparer.OrdinalIgnoreCase)
-    {
-        "discord",
-        "discordptb",
-        "obs64",
-        "medal",
-        "action",
-        "streamlabsobs"
-    };
-
     private static readonly HashSet<string> BrowserTargets = new(StringComparer.OrdinalIgnoreCase)
     {
         "chrome",
@@ -33,6 +23,8 @@ public class OptimizerService
     private readonly TimerResolutionService _timerResolution;
     private readonly OverlayService _overlayService;
     private readonly ExplorerWindowService _explorerWindowService;
+    private readonly OptimizationPlanBuilder _planBuilder;
+    private readonly OptimizationSuggestionService _suggestionService;
     private readonly ProcessRules _rules;
     private readonly OptimizationSession _session = new();
 
@@ -47,6 +39,8 @@ public class OptimizerService
         TimerResolutionService timerResolution,
         OverlayService overlayService,
         ExplorerWindowService explorerWindowService,
+        OptimizationPlanBuilder planBuilder,
+        OptimizationSuggestionService suggestionService,
         ProcessRules rules)
     {
         _configService = configService;
@@ -57,6 +51,8 @@ public class OptimizerService
         _timerResolution = timerResolution;
         _overlayService = overlayService;
         _explorerWindowService = explorerWindowService;
+        _planBuilder = planBuilder;
+        _suggestionService = suggestionService;
         _rules = rules;
     }
 
@@ -95,7 +91,8 @@ public class OptimizerService
             return ("BlueStacks nao detectado. Abra o emulador antes de otimizar.", logs);
         }
 
-        var effectiveAllowedProcesses = GetAllowedProcesses(config, report.RecordingModeDetected);
+        var plan = _planBuilder.Build(config, report.RecordingModeDetected);
+        var effectiveAllowedProcesses = plan.EffectiveAllowedProcesses;
 
         _session.ActiveProfile = config.SelectedProfile;
 
@@ -110,8 +107,8 @@ public class OptimizerService
             logs.Add($"Modo gravacao detectado: {string.Join(", ", recorderProcesses.Select(p => p.ProcessName).Distinct())}");
         }
 
-        var activeKillBlacklist = GetKillBlacklistByProfile(config, report.RecordingModeDetected);
-        var activeSuspendBlacklist = GetSuspendBlacklistByProfile(config, report.RecordingModeDetected);
+        var activeKillBlacklist = plan.KillBlacklist;
+        var activeSuspendBlacklist = plan.SuspendBlacklist;
 
         report.KillPlanCount = activeKillBlacklist.Count;
         report.SuspendPlanCount = activeSuspendBlacklist.Count;
@@ -324,93 +321,16 @@ public class OptimizerService
         return _scanner.FindProcessesByNames(config.EmulatorProcesses).Any();
     }
 
-    private static List<string> GetKillBlacklistByProfile(AppConfig config, bool recordingMode)
-    {
-        var result = new List<string>(config.SafeBlacklist);
-
-        if (config.EnableFreeFireMode)
-            result.AddRange(config.FreeFireSafeBlacklist);
-
-        if (config.SelectedProfile.Equals("Forte", StringComparison.OrdinalIgnoreCase) ||
-            config.SelectedProfile.Equals("Ultra", StringComparison.OrdinalIgnoreCase))
-        {
-            result.AddRange(config.StrongBlacklist);
-
-            if (config.EnableFreeFireMode)
-                result.AddRange(config.FreeFireStrongBlacklist);
-        }
-
-        if (config.SelectedProfile.Equals("Ultra", StringComparison.OrdinalIgnoreCase))
-        {
-            result.AddRange(config.UltraBlacklist);
-
-            if (config.EnableFreeFireMode)
-                result.AddRange(config.FreeFireUltraBlacklist);
-        }
-
-        if (recordingMode)
-            result.RemoveAll(ShouldPreserveWhileRecording);
-
-        return result
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .ToList();
-    }
-
-    private static List<string> GetSuspendBlacklistByProfile(AppConfig config, bool recordingMode)
-    {
-        var result = new List<string>();
-
-        if (recordingMode)
-            result.RemoveAll(ShouldPreserveWhileRecording);
-
-        return result
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .ToList();
-    }
-
-    private static List<string> BuildSuggestions(
+    private List<string> BuildSuggestions(
         AppConfig config,
         IReadOnlyCollection<string> runningProcesses,
         IReadOnlyCollection<string> effectiveAllowedProcesses,
         bool recordingMode)
     {
-        var suggestions = new List<string>();
-
-        if (recordingMode)
-            suggestions.Add("Modo gravacao ativo: prefira o perfil Seguro ou Forte para estabilidade da captura.");
-
-        if (config.EnableFreeFireMode)
-            suggestions.Add("Modo Free Fire ativo: a whitelist protege BlueStacks, Discord e gravadores autorizados.");
-
-        if (runningProcesses.Contains("Discord", StringComparer.OrdinalIgnoreCase) &&
-            !effectiveAllowedProcesses.Contains("Discord", StringComparer.OrdinalIgnoreCase))
-        {
-            suggestions.Add("Considere permitir o Discord se ele for essencial durante a partida.");
-        }
-
-        if (runningProcesses.Contains("steamwebhelper", StringComparer.OrdinalIgnoreCase))
-            suggestions.Add("Feche o Steam overlay se nao estiver usando recursos sociais.");
-
-        return suggestions;
-    }
-
-    private static List<string> GetAllowedProcesses(AppConfig config, bool recordingMode)
-    {
-        var result = new List<string>(config.AllowedProcesses);
-
-        if (config.EnableFreeFireMode)
-            result.AddRange(config.FreeFireAllowedProcesses);
-
-        if (recordingMode)
-            result.AddRange(PreserveDuringRecording);
-
-        return result
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .ToList();
-    }
-
-    private static bool ShouldPreserveWhileRecording(string processName)
-    {
-        return PreserveDuringRecording.Contains(processName);
+        return _suggestionService.BuildSuggestions(
+            config,
+            runningProcesses,
+            effectiveAllowedProcesses,
+            recordingMode);
     }
 }

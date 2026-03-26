@@ -18,6 +18,18 @@ public class TelemetryService
     public void Append(TelemetryEntry entry)
     {
         var history = LoadHistory();
+        entry.KilledProcesses = entry.KilledProcesses
+            .Select(NormalizeProcessName)
+            .Where(static name => !string.IsNullOrWhiteSpace(name))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(static name => name, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        entry.RelaunchedProcesses = entry.RelaunchedProcesses
+            .Select(NormalizeProcessName)
+            .Where(static name => !string.IsNullOrWhiteSpace(name))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(static name => name, StringComparer.OrdinalIgnoreCase)
+            .ToList();
         history.Add(entry);
 
         if (history.Count > 50)
@@ -114,9 +126,10 @@ public class TelemetryService
         {
             foreach (var process in entry.KilledProcesses)
             {
-                if (running.Contains(process))
+                var normalizedName = NormalizeProcessName(process);
+                if (running.Contains(normalizedName))
                 {
-                    relaunchCounts[process] = relaunchCounts.TryGetValue(process, out var count) ? count + 1 : 1;
+                    relaunchCounts[normalizedName] = relaunchCounts.TryGetValue(normalizedName, out var count) ? count + 1 : 1;
                 }
             }
         }
@@ -142,5 +155,17 @@ public class TelemetryService
         {
             return new List<TelemetryEntry>();
         }
+    }
+
+    private static string NormalizeProcessName(string processName)
+    {
+        if (string.IsNullOrWhiteSpace(processName))
+            return string.Empty;
+
+        const string pidToken = " (PID ";
+        var pidIndex = processName.IndexOf(pidToken, StringComparison.OrdinalIgnoreCase);
+        return pidIndex > 0
+            ? processName[..pidIndex].Trim()
+            : processName.Trim();
     }
 }

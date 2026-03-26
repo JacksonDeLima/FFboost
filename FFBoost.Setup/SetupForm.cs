@@ -6,6 +6,7 @@ namespace FFBoost.Setup;
 
 public class SetupForm : Form
 {
+    private readonly SetupService _setupService;
     private readonly Label _statusLabel;
     private readonly Button _installButton;
     private readonly Button _uninstallButton;
@@ -24,6 +25,7 @@ public class SetupForm : Form
         ForeColor = Color.White;
         Font = new Font("Segoe UI", 10F, FontStyle.Regular, GraphicsUnit.Point);
         Padding = new Padding(12);
+        _setupService = new SetupService(GetTargetDir());
 
         _logoBox = new PictureBox
         {
@@ -162,73 +164,26 @@ public class SetupForm : Form
 
     private void InstallButton_Click(object? sender, EventArgs e)
     {
-        try
-        {
-            SetBusy(true);
-            _statusLabel.ForeColor = Color.FromArgb(235, 241, 255);
-            _statusLabel.Text = "Extraindo arquivos..." + Environment.NewLine + "Destino: %LocalAppData%\\FFBoost";
-            Application.DoEvents();
+        SetBusy(true);
+        _statusLabel.ForeColor = Color.FromArgb(235, 241, 255);
+        _statusLabel.Text = "Preparando instalacao..." + Environment.NewLine + "Destino: %LocalAppData%\\FFBoost";
+        _statusLabel.Refresh();
 
-            var targetDir = GetTargetDir();
-            Directory.CreateDirectory(targetDir);
-
-            ExtractResource("Payload.FFBoost.exe", Path.Combine(targetDir, "FFBoost.exe"));
-            ExtractResource("Payload.config.json", Path.Combine(targetDir, "config.json"));
-            CreateDesktopShortcut(targetDir);
-
-            var exePath = Path.Combine(targetDir, "FFBoost.exe");
-            _statusLabel.Text = "Instalacao concluida." + Environment.NewLine +
-                                $"App: {exePath}" + Environment.NewLine +
-                                "Atalho criado na area de trabalho.";
-
-            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
-            {
-                FileName = exePath,
-                WorkingDirectory = targetDir,
-                UseShellExecute = true
-            });
-        }
-        catch (Exception ex)
-        {
-            _statusLabel.ForeColor = Color.FromArgb(255, 120, 120);
-            _statusLabel.Text = "Falha na instalacao." + Environment.NewLine + ex.Message;
-        }
-        finally
-        {
-            SetBusy(false);
-        }
+        var result = _setupService.Install(Assembly.GetExecutingAssembly());
+        ApplyOperationResult(result);
+        SetBusy(false);
     }
 
     private void UninstallButton_Click(object? sender, EventArgs e)
     {
-        try
-        {
-            SetBusy(true);
-            _statusLabel.ForeColor = Color.FromArgb(235, 241, 255);
+        SetBusy(true);
+        _statusLabel.ForeColor = Color.FromArgb(235, 241, 255);
+        _statusLabel.Text = "Removendo FF Boost...";
+        _statusLabel.Refresh();
 
-            var targetDir = GetTargetDir();
-            var desktopShortcut = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory),
-                "FF Boost.lnk");
-
-            if (File.Exists(desktopShortcut))
-                File.Delete(desktopShortcut);
-
-            if (Directory.Exists(targetDir))
-                Directory.Delete(targetDir, true);
-
-            _statusLabel.Text = "Desinstalacao concluida." + Environment.NewLine +
-                                "Arquivos removidos de %LocalAppData%\\FFBoost.";
-        }
-        catch (Exception ex)
-        {
-            _statusLabel.ForeColor = Color.FromArgb(255, 120, 120);
-            _statusLabel.Text = "Falha na desinstalacao." + Environment.NewLine + ex.Message;
-        }
-        finally
-        {
-            SetBusy(false);
-        }
+        var result = _setupService.Uninstall();
+        ApplyOperationResult(result);
+        SetBusy(false);
     }
 
     private void SetBusy(bool busy)
@@ -237,38 +192,19 @@ public class SetupForm : Form
         _uninstallButton.Enabled = !busy;
     }
 
+    private void ApplyOperationResult(SetupOperationResult result)
+    {
+        _statusLabel.ForeColor = result.Success
+            ? Color.FromArgb(235, 241, 255)
+            : Color.FromArgb(255, 120, 120);
+        _statusLabel.Text = result.DisplayText;
+    }
+
     private static string GetTargetDir()
     {
         return Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "FFBoost");
-    }
-
-    private static void ExtractResource(string resourceName, string outputPath)
-    {
-        using var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream(resourceName)
-            ?? throw new InvalidOperationException($"Recurso nao encontrado: {resourceName}");
-        using var file = File.Create(outputPath);
-        stream.CopyTo(file);
-    }
-
-    private static void CreateDesktopShortcut(string targetDir)
-    {
-        var desktop = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
-        var shortcutPath = Path.Combine(desktop, "FF Boost.lnk");
-        var targetExe = Path.Combine(targetDir, "FFBoost.exe");
-
-        var shell = Type.GetTypeFromProgID("WScript.Shell")
-            ?? throw new InvalidOperationException("WScript.Shell indisponivel.");
-
-        dynamic shellObject = Activator.CreateInstance(shell)
-            ?? throw new InvalidOperationException("Nao foi possivel criar o shell.");
-
-        dynamic shortcut = shellObject.CreateShortcut(shortcutPath);
-        shortcut.TargetPath = targetExe;
-        shortcut.WorkingDirectory = targetDir;
-        shortcut.IconLocation = targetExe;
-        shortcut.Save();
     }
 }
 

@@ -17,6 +17,7 @@ public class MainForm : Form
     private readonly OptimizerService _optimizer;
     private readonly AdminService _adminService;
     private readonly ConfigService _configService;
+    private readonly OptimizationCoordinatorService _optimizationCoordinator;
     private readonly SystemMetricsService _metricsService;
     private readonly LogFileService _logFileService;
     private readonly TelemetryService _telemetryService;
@@ -40,7 +41,15 @@ public class MainForm : Form
     private bool _exitRequested;
     private bool _watcherTriggeredChange;
 
-    public MainForm()
+    public MainForm(
+        OptimizerService optimizer,
+        AdminService adminService,
+        ConfigService configService,
+        SystemMetricsService metricsService,
+        LogFileService logFileService,
+        TelemetryService telemetryService,
+        OptimizationCoordinatorService optimizationCoordinator,
+        GameWatcherService watcherService)
     {
         Text = "FF Boost";
         StartPosition = FormStartPosition.CenterScreen;
@@ -51,26 +60,14 @@ public class MainForm : Form
         Font = new Font("Segoe UI", 10F, FontStyle.Regular, GraphicsUnit.Point);
         DoubleBuffered = true;
 
-        var baseDirectory = AppDomain.CurrentDomain.BaseDirectory;
-        var configPath = Path.Combine(baseDirectory, "config.json");
-
-        _configService = new ConfigService(configPath);
-        _optimizer = new OptimizerService(
-            _configService,
-            new ProcessScanner(),
-            new ProcessKiller(),
-            new ProcessSuspendService(),
-            new PerformanceManager(),
-            new TimerResolutionService(),
-            new OverlayService(),
-            new ExplorerWindowService(),
-            new ProcessRules());
-
-        _adminService = new AdminService();
-        _metricsService = new SystemMetricsService();
-        _logFileService = new LogFileService(baseDirectory);
-        _telemetryService = new TelemetryService(baseDirectory);
-        _watcherService = new GameWatcherService(new ProcessScanner(), _configService);
+        _optimizer = optimizer;
+        _adminService = adminService;
+        _configService = configService;
+        _metricsService = metricsService;
+        _logFileService = logFileService;
+        _telemetryService = telemetryService;
+        _optimizationCoordinator = optimizationCoordinator;
+        _watcherService = watcherService;
 
         _logoBox = new PictureBox
         {
@@ -676,80 +673,16 @@ public class MainForm : Form
     private void ExecuteOptimize(bool manualTrigger)
     {
         _lstLogs.Items.Clear();
+        var profile = _cmbProfile.SelectedItem?.ToString() ?? "Seguro";
+        var result = _optimizationCoordinator.ExecuteOptimize(profile, _chkFreeFireMode.Checked);
+        var report = result.Report;
 
-        var runningBefore = _optimizer.GetRunningProcesses();
-        var cpuBefore = _metricsService.GetCpuUsagePercentage();
-        var ramBefore = _metricsService.GetUsedRamGb();
-        var result = _optimizer.StartGameMode();
-        var cpuAfter = _metricsService.GetCpuUsagePercentage();
-        var ramAfter = _metricsService.GetUsedRamGb();
-
-        var report = _optimizer.LastTechnicalReport;
-        report.CpuBefore = cpuBefore;
-        report.CpuAfter = cpuAfter;
-        report.RamBefore = ramBefore;
-        report.RamAfter = ramAfter;
-        report.ProcessesBefore = runningBefore.Count;
-        report.ProcessesAfter = _optimizer.GetRunningProcesses().Count;
-        report.SessionScore = CalculateSessionScore(report);
-        report.Benchmark = _telemetryService.BuildBenchmarkSummary(
-            _cmbProfile.SelectedItem?.ToString() ?? "Seguro",
-            _chkFreeFireMode.Checked,
-            report.SessionScore);
-
-        _lblStatus.Text = result.status;
-        AddLogs(result.logs);
-        _lblCpuInfo.Text = $"CPU: {cpuBefore}% -> {cpuAfter}%";
-        _lblRamInfo.Text = $"RAM: {ramBefore} GB -> {ramAfter} GB";
+        _lblStatus.Text = result.Status;
+        AddLogs(result.Logs);
+        _lblCpuInfo.Text = $"CPU: {report.CpuBefore}% -> {report.CpuAfter}%";
+        _lblRamInfo.Text = $"RAM: {report.RamBefore} GB -> {report.RamAfter} GB";
         _lblBenchmarkInfo.Text = $"Benchmark: score {report.SessionScore:0.##} | media {report.Benchmark.AvgScore:0.##} | delta {report.Benchmark.LastScoreDelta:+0.##;-0.##;0}";
-
-        var suggestions = _telemetryService.GetWhitelistSuggestions(runningBefore);
-        foreach (var suggestion in suggestions)
-            AddLogs(new[] { $"Sugestao de whitelist: {suggestion}" });
-
-        var fullLog = new List<string>
-        {
-            $"Status: {result.status}",
-            $"Perfil: {_cmbProfile.SelectedItem}",
-            $"Modo FF: {(_chkFreeFireMode.Checked ? "ativo" : "padrao")}",
-            $"Score: {report.SessionScore:0.##}",
-            $"Benchmark delta: {report.Benchmark.LastScoreDelta:+0.##;-0.##;0}",
-            $"CPU: {cpuBefore}% -> {cpuAfter}%",
-            $"RAM: {ramBefore} GB -> {ramAfter} GB",
-            $"Processos: {report.ProcessesBefore} -> {report.ProcessesAfter}",
-            $"Plano: kill {report.KillPlanCount}, suspend {report.SuspendPlanCount}",
-            $"Encerrados: {report.KilledCount}",
-            $"Suspensos: {report.SuspendedCount}",
-            $"Overlays: {report.OverlayCount}",
-            $"Tempo: {report.Elapsed.TotalMilliseconds:0} ms"
-        };
-        fullLog.AddRange(result.logs);
-
-        var logPath = _logFileService.SaveLog(fullLog);
-        AddLogs(new[] { $"Log salvo em: {logPath}" });
-
-        if (_configService.Load().TelemetryEnabled)
-        {
-            _telemetryService.Append(new FFBoost.Core.Models.TelemetryEntry
-            {
-                Timestamp = DateTime.Now,
-                Profile = _cmbProfile.SelectedItem?.ToString() ?? "Seguro",
-                FreeFireModeEnabled = _chkFreeFireMode.Checked,
-                CpuBefore = cpuBefore,
-                CpuAfter = cpuAfter,
-                RamBefore = ramBefore,
-                RamAfter = ramAfter,
-                SessionScore = report.SessionScore,
-                KilledCount = report.KilledCount,
-                SuspendedCount = report.SuspendedCount,
-                KilledProcesses = report.KilledProcesses,
-                RelaunchedProcesses = suggestions
-            });
-        }
-
-        report.Recommendation = _telemetryService.GetRecommendedProfile(_chkFreeFireMode.Checked);
         _lblRecommendation.Text = $"Recomendacao: {report.Recommendation.RecommendedProfile} | score {report.Recommendation.Score:0.##} | {report.Recommendation.Reason}";
-        AddLogs(new[] { $"Perfil recomendado: {report.Recommendation.RecommendedProfile}" });
 
         if (manualTrigger)
         {
@@ -760,9 +693,9 @@ public class MainForm : Form
 
     private void ExecuteRestore(bool manualTrigger)
     {
-        var result = _optimizer.Restore();
-        _lblStatus.Text = result.status;
-        AddLogs(result.logs);
+        var result = _optimizationCoordinator.ExecuteRestore();
+        _lblStatus.Text = result.Status;
+        AddLogs(result.Logs);
 
         if (manualTrigger)
         {
@@ -895,16 +828,6 @@ public class MainForm : Form
 
     [DllImport("user32.dll", SetLastError = true)]
     private static extern bool UnregisterHotKey(IntPtr hWnd, int id);
-
-    private static double CalculateSessionScore(FFBoost.Core.Models.TechnicalReport report)
-    {
-        var cpuGain = Math.Max(0, report.CpuBefore - report.CpuAfter);
-        var ramGain = Math.Max(0, report.RamBefore - report.RamAfter) * 8;
-        var processGain = Math.Max(0, report.KilledCount * 1.2) + Math.Max(0, report.SuspendedCount * 0.8);
-        var overlayPenalty = report.OverlayCount * 0.5;
-        var freeFireBonus = report.FreeFireModeEnabled ? 2.0 : 0.0;
-        return Math.Round(cpuGain + ramGain + processGain + freeFireBonus - overlayPenalty, 2);
-    }
 }
 
 internal sealed class SciFiPanel : Panel

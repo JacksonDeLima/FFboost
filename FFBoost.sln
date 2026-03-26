@@ -6,6 +6,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FFBoost.Core", "FFBoost.Cor
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FFBoost.UI", "FFBoost.UI\FFBoost.UI.csproj", "{24348884-A109-438C-B234-5FA13B80BBE6}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FFBoost.Setup", "FFBoost.Setup\FFBoost.Setup.csproj", "{B4B1C5F0-2A64-4B43-99B9-31B2EAC65001}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FFBoost.Core.Tests", "FFBoost.Core.Tests\FFBoost.Core.Tests.csproj", "{8A1E8894-B8B4-4736-A8B6-51D33C37F122}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -20,6 +24,14 @@ Global
 		{24348884-A109-438C-B234-5FA13B80BBE6}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{24348884-A109-438C-B234-5FA13B80BBE6}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{24348884-A109-438C-B234-5FA13B80BBE6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B4B1C5F0-2A64-4B43-99B9-31B2EAC65001}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B4B1C5F0-2A64-4B43-99B9-31B2EAC65001}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B4B1C5F0-2A64-4B43-99B9-31B2EAC65001}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B4B1C5F0-2A64-4B43-99B9-31B2EAC65001}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8A1E8894-B8B4-4736-A8B6-51D33C37F122}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8A1E8894-B8B4-4736-A8B6-51D33C37F122}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8A1E8894-B8B4-4736-A8B6-51D33C37F122}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8A1E8894-B8B4-4736-A8B6-51D33C37F122}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

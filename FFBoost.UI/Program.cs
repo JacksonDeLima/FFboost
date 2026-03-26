@@ -12,6 +12,6 @@ internal static class Program
         {
             splash.ShowDialog();
         }
-        Application.Run(new MainForm());
+        Application.Run(AppBootstrapper.CreateMainForm());
     }
 }

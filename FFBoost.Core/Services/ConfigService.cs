@@ -5,6 +5,7 @@ namespace FFBoost.Core.Services;
 
 public class ConfigService
 {
+    private const int MaxBackupFiles = 12;
     private readonly string _configPath;
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -52,6 +53,26 @@ public class ConfigService
         var backupFileName = $"config-{DateTime.Now:yyyyMMdd-HHmmss}.json.bak";
         var backupPath = Path.Combine(backupDirectory, backupFileName);
         File.Copy(_configPath, backupPath, overwrite: true);
+        TrimOldBackups(backupDirectory);
+    }
+
+    private static void TrimOldBackups(string backupDirectory)
+    {
+        var files = new DirectoryInfo(backupDirectory)
+            .GetFiles("config-*.json.bak")
+            .OrderByDescending(static file => file.CreationTimeUtc)
+            .ToList();
+
+        foreach (var file in files.Skip(MaxBackupFiles))
+        {
+            try
+            {
+                file.Delete();
+            }
+            catch
+            {
+            }
+        }
     }
 
     private static void Normalize(AppConfig config)

@@ -2,6 +2,7 @@ namespace FFBoost.Core.Services;
 
 public class LogFileService
 {
+    private const int MaxLogFiles = 30;
     private readonly string _logDirectory;
 
     public LogFileService(string basePath)
@@ -16,6 +17,26 @@ public class LogFileService
         var filePath = Path.Combine(_logDirectory, fileName);
 
         File.WriteAllLines(filePath, logs);
+        TrimOldLogs();
         return filePath;
+    }
+
+    private void TrimOldLogs()
+    {
+        var files = new DirectoryInfo(_logDirectory)
+            .GetFiles("ffboost_*.txt")
+            .OrderByDescending(static file => file.CreationTimeUtc)
+            .ToList();
+
+        foreach (var file in files.Skip(MaxLogFiles))
+        {
+            try
+            {
+                file.Delete();
+            }
+            catch
+            {
+            }
+        }
     }
 }
