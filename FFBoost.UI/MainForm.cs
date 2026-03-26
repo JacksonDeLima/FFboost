@@ -122,13 +122,14 @@ public class MainForm : Form
 
         _cmbProfile = new ComboBox
         {
-            Width = 220,
+            Width = 186,
             DropDownStyle = ComboBoxStyle.DropDownList,
             BackColor = Color.FromArgb(10, 18, 36),
             ForeColor = Color.White,
             FlatStyle = FlatStyle.Flat,
             Font = new Font("Segoe UI Semibold", 13F, FontStyle.Bold, GraphicsUnit.Point)
         };
+        _cmbProfile.DropDownWidth = 186;
         _cmbProfile.SelectedIndexChanged += CmbProfile_SelectedIndexChanged;
 
         _chkFreeFireMode = new CheckBox
@@ -309,16 +310,6 @@ public class MainForm : Form
 
     private Control BuildProfileCard()
     {
-        var label = new Label
-        {
-            Text = "Perfil",
-            Width = 110,
-            ForeColor = Color.FromArgb(88, 205, 255),
-            BackColor = Color.Transparent,
-            Font = new Font("Segoe UI", 11.5F, FontStyle.Regular, GraphicsUnit.Point),
-            TextAlign = ContentAlignment.MiddleLeft
-        };
-
         var valueFrame = new NeonPanel
         {
             Size = new Size(530, 42),
@@ -328,11 +319,37 @@ public class MainForm : Form
             FillBottom = Color.FromArgb(7, 12, 26),
             Padding = new Padding(12, 4, 12, 4)
         };
-        valueFrame.Controls.Add(_cmbProfile);
-        valueFrame.Resize += (_, _) =>
+
+        var label = new Label
         {
-            _cmbProfile.Location = new Point(valueFrame.Width - _cmbProfile.Width - 16, Math.Max(0, (valueFrame.Height - _cmbProfile.Height) / 2));
+            Text = "Perfil",
+            Dock = DockStyle.Left,
+            Width = 112,
+            ForeColor = Color.FromArgb(88, 205, 255),
+            BackColor = Color.Transparent,
+            Font = new Font("Segoe UI", 11.5F, FontStyle.Regular, GraphicsUnit.Point),
+            TextAlign = ContentAlignment.MiddleLeft
         };
+
+        var comboHost = new Panel
+        {
+            Dock = DockStyle.Fill,
+            BackColor = Color.Transparent,
+            Padding = new Padding(0)
+        };
+        comboHost.Controls.Add(_cmbProfile);
+        comboHost.Resize += (_, _) =>
+        {
+            var desiredWidth = Math.Min(186, Math.Max(156, comboHost.Width - 120));
+            _cmbProfile.Width = desiredWidth;
+            _cmbProfile.DropDownWidth = desiredWidth;
+            _cmbProfile.Location = new Point(
+                Math.Max(0, comboHost.Width - desiredWidth - 20),
+                Math.Max(0, (comboHost.Height - _cmbProfile.Height) / 2));
+        };
+
+        valueFrame.Controls.Add(comboHost);
+        valueFrame.Controls.Add(label);
 
         var host = new Panel
         {
@@ -341,11 +358,9 @@ public class MainForm : Form
         };
         host.Controls.Add(_chkFreeFireMode);
         host.Controls.Add(valueFrame);
-        host.Controls.Add(label);
         host.Resize += (_, _) =>
         {
             valueFrame.Location = new Point(Math.Max(0, (host.Width - valueFrame.Width) / 2), 10);
-            label.Location = new Point(valueFrame.Left + 16, 9);
         };
 
         return host;
