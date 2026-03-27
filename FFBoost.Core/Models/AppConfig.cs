@@ -18,8 +18,11 @@ public class AppConfig
     public bool EnableAffinityTuning { get; set; } = true;
     public bool EnableOverlayDetection { get; set; } = true;
     public bool EnableWatcher { get; set; } = true;
+    public bool EnableTurboMode { get; set; } = true;
     public bool TelemetryEnabled { get; set; } = true;
     public bool AutoOptimizeOnStartup { get; set; } = true;
+    public bool LaunchOnWindowsStartup { get; set; }
+    public bool StartupPreferenceInitialized { get; set; }
     public bool EnableFreeFireMode { get; set; }
     public string SelectedProfile { get; set; } = "Seguro";
 }

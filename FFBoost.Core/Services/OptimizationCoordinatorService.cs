@@ -9,19 +9,22 @@ public class OptimizationCoordinatorService
     private readonly LogFileService _logFileService;
     private readonly TelemetryService _telemetryService;
     private readonly ConfigService _configService;
+    private readonly PerformanceReportService _performanceReportService;
 
     public OptimizationCoordinatorService(
         OptimizerService optimizer,
         SystemMetricsService metricsService,
         LogFileService logFileService,
         TelemetryService telemetryService,
-        ConfigService configService)
+        ConfigService configService,
+        PerformanceReportService performanceReportService)
     {
         _optimizer = optimizer;
         _metricsService = metricsService;
         _logFileService = logFileService;
         _telemetryService = telemetryService;
         _configService = configService;
+        _performanceReportService = performanceReportService;
     }
 
     public OptimizationExecutionResult ExecuteOptimize(string profile, bool freeFireModeEnabled)
@@ -29,9 +32,11 @@ public class OptimizationCoordinatorService
         var runningBefore = _optimizer.GetRunningProcesses();
         var cpuBefore = _metricsService.GetCpuUsagePercentage();
         var ramBefore = _metricsService.GetUsedRamGb();
+        var ramUsageBeforePercent = _metricsService.GetRamUsagePercentage();
         var optimizationResult = _optimizer.StartGameMode();
         var cpuAfter = _metricsService.GetCpuUsagePercentage();
         var ramAfter = _metricsService.GetUsedRamGb();
+        var ramUsageAfterPercent = _metricsService.GetRamUsagePercentage();
         var optimizationSucceeded = _optimizer.IsGameModeActive();
 
         var report = _optimizer.LastTechnicalReport;
@@ -39,30 +44,39 @@ public class OptimizationCoordinatorService
         report.CpuAfter = cpuAfter;
         report.RamBefore = ramBefore;
         report.RamAfter = ramAfter;
+        if (report.RamUsageBeforePercent <= 0)
+            report.RamUsageBeforePercent = ramUsageBeforePercent;
+
+        report.RamUsageAfterPercent = ramUsageAfterPercent;
         report.ProcessesBefore = runningBefore.Count;
         report.ProcessesAfter = _optimizer.GetRunningProcesses().Count;
         report.SessionScore = optimizationSucceeded ? CalculateSessionScore(report) : 0;
+        var effectiveProfile = report.Profile;
         report.Benchmark = optimizationSucceeded
-            ? _telemetryService.BuildBenchmarkSummary(profile, freeFireModeEnabled, report.SessionScore)
+            ? _telemetryService.BuildBenchmarkSummary(effectiveProfile, freeFireModeEnabled, report.SessionScore)
             : new BenchmarkSummary();
+        report.PerformanceReport = _performanceReportService.BuildReport(report);
 
         var whitelistSuggestions = _telemetryService.GetWhitelistSuggestions(runningBefore);
         var combinedLogs = new List<string>(optimizationResult.logs);
+        combinedLogs.Insert(0, $"Status: {optimizationResult.status}");
         combinedLogs.AddRange(whitelistSuggestions.Select(static suggestion => $"Sugestao de whitelist: {suggestion}"));
 
         var fullLog = new List<string>
         {
             $"Status: {optimizationResult.status}",
-            $"Perfil: {profile}",
+            $"Perfil: {effectiveProfile}",
             $"Modo FF: {(freeFireModeEnabled ? "ativo" : "padrao")}",
             $"Score: {report.SessionScore:0.##}",
             $"Benchmark delta: {report.Benchmark.LastScoreDelta:+0.##;-0.##;0}",
             $"CPU: {cpuBefore}% -> {cpuAfter}%",
             $"RAM: {ramBefore} GB -> {ramAfter} GB",
+            $"Carga RAM: {report.RamUsageBeforePercent:0.#}% -> {report.RamUsageAfterPercent:0.#}%",
             $"Processos: {report.ProcessesBefore} -> {report.ProcessesAfter}",
             $"Plano: kill {report.KillPlanCount}, suspend {report.SuspendPlanCount}",
             $"Encerrados: {report.KilledCount}",
             $"Suspensos: {report.SuspendedCount}",
+            $"Memoria otimizada: {report.MemoryOptimizedProcessCount} processo(s), ~{report.MemoryRecoveredMb:0.#} MB",
             $"Overlays: {report.OverlayCount}",
             $"Tempo: {report.Elapsed.TotalMilliseconds:0} ms"
         };
@@ -77,7 +91,7 @@ public class OptimizationCoordinatorService
             _telemetryService.Append(new TelemetryEntry
             {
                 Timestamp = DateTime.Now,
-                Profile = profile,
+                Profile = effectiveProfile,
                 FreeFireModeEnabled = freeFireModeEnabled,
                 CpuBefore = cpuBefore,
                 CpuAfter = cpuAfter,
@@ -86,6 +100,7 @@ public class OptimizationCoordinatorService
                 SessionScore = report.SessionScore,
                 KilledCount = report.KilledCount,
                 SuspendedCount = report.SuspendedCount,
+                TurboModeApplied = report.TurboModeApplied,
                 KilledProcesses = report.KilledProcesses,
                 RelaunchedProcesses = whitelistSuggestions
             });
@@ -95,7 +110,7 @@ public class OptimizationCoordinatorService
             ? _telemetryService.GetRecommendedProfile(freeFireModeEnabled)
             : new ProfileRecommendation
             {
-                RecommendedProfile = profile,
+                RecommendedProfile = effectiveProfile,
                 UseFreeFirePreset = freeFireModeEnabled,
                 Reason = "Otimizacao nao concluida. Recomendacao mantida ate haver uma sessao valida."
             };
@@ -118,6 +133,43 @@ public class OptimizationCoordinatorService
         {
             Status = restoreResult.status,
             Logs = restoreResult.logs
+        };
+    }
+
+    public MemoryOptimizationExecutionResult ExecuteMemoryOptimize(string profile, bool freeFireModeEnabled)
+    {
+        var result = _optimizer.OptimizeMemory(profile, freeFireModeEnabled);
+        var fullLog = new List<string>
+        {
+            $"Status: {result.Status}",
+            $"Perfil: {result.Result.Profile}",
+            $"RAM: {result.Result.RamBeforeGb:0.##} GB -> {result.Result.RamAfterGb:0.##} GB",
+            $"Carga RAM: {result.Result.RamUsageBeforePercent:0.#}% -> {result.Result.RamUsageAfterPercent:0.#}%",
+            $"Memoria otimizada: {result.Result.TrimmedProcessCount} processo(s), ~{result.Result.EstimatedFreedMb:0.#} MB"
+        };
+        fullLog.AddRange(result.Logs);
+        var logPath = _logFileService.SaveLog(fullLog);
+
+        var logs = new List<string>(result.Logs)
+        {
+            $"Log salvo em: {logPath}"
+        };
+
+        return new MemoryOptimizationExecutionResult
+        {
+            Status = result.Status,
+            Logs = logs,
+            Result = result.Result
+        };
+    }
+
+    public RestoreExecutionResult RecoverPendingSystemState()
+    {
+        var logs = _optimizer.RecoverPendingSystemState();
+        return new RestoreExecutionResult
+        {
+            Status = logs.Count > 0 ? "Estado anterior restaurado." : "Nenhuma recuperacao pendente.",
+            Logs = logs
         };
     }
 

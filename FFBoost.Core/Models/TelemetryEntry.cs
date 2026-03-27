@@ -12,6 +12,7 @@ public class TelemetryEntry
     public double SessionScore { get; set; }
     public int KilledCount { get; set; }
     public int SuspendedCount { get; set; }
+    public bool TurboModeApplied { get; set; }
     public List<string> KilledProcesses { get; set; } = new();
     public List<string> RelaunchedProcesses { get; set; } = new();
 }

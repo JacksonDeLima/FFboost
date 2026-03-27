@@ -25,7 +25,13 @@ public class OptimizerService
     private readonly ExplorerWindowService _explorerWindowService;
     private readonly OptimizationPlanBuilder _planBuilder;
     private readonly OptimizationSuggestionService _suggestionService;
+    private readonly ProcessAnalyzerService _processAnalyzer;
+    private readonly SystemMetricsService _metricsService;
+    private readonly AutomaticProfileService _automaticProfileService;
+    private readonly TurboModeService _turboModeService;
+    private readonly MemoryOptimizerService _memoryOptimizerService;
     private readonly ProcessRules _rules;
+    private readonly PerformanceSessionStateStore _sessionStateStore;
     private readonly OptimizationSession _session = new();
 
     public TechnicalReport LastTechnicalReport { get; private set; } = new();
@@ -41,7 +47,13 @@ public class OptimizerService
         ExplorerWindowService explorerWindowService,
         OptimizationPlanBuilder planBuilder,
         OptimizationSuggestionService suggestionService,
-        ProcessRules rules)
+        ProcessAnalyzerService processAnalyzer,
+        SystemMetricsService metricsService,
+        AutomaticProfileService automaticProfileService,
+        TurboModeService turboModeService,
+        MemoryOptimizerService memoryOptimizerService,
+        ProcessRules rules,
+        PerformanceSessionStateStore sessionStateStore)
     {
         _configService = configService;
         _scanner = scanner;
@@ -53,7 +65,13 @@ public class OptimizerService
         _explorerWindowService = explorerWindowService;
         _planBuilder = planBuilder;
         _suggestionService = suggestionService;
+        _processAnalyzer = processAnalyzer;
+        _metricsService = metricsService;
+        _automaticProfileService = automaticProfileService;
+        _turboModeService = turboModeService;
+        _memoryOptimizerService = memoryOptimizerService;
         _rules = rules;
+        _sessionStateStore = sessionStateStore;
     }
 
     public (string status, List<string> logs) StartGameMode()
@@ -70,6 +88,7 @@ public class OptimizerService
         }
 
         var config = _configService.Load();
+        var effectiveProfile = ResolveEffectiveProfile(config, logs);
         var running = _scanner.GetRunningProcesses();
         var runningNames = running
             .Select(p => p.ProcessName)
@@ -79,10 +98,11 @@ public class OptimizerService
         var emulatorProcesses = _scanner.FindProcessesByNames(config.EmulatorProcesses);
         var recorderProcesses = _scanner.FindProcessesByNames(config.RecordingProcesses);
 
-        report.Profile = config.SelectedProfile;
+        report.Profile = effectiveProfile;
         report.FreeFireModeEnabled = config.EnableFreeFireMode;
         report.ProcessesBefore = running.Count;
         report.RecordingModeDetected = recorderProcesses.Count > 0;
+        report.TopProcessesBefore = _processAnalyzer.GetTopProcesses();
 
         if (!emulatorProcesses.Any())
         {
@@ -91,13 +111,14 @@ public class OptimizerService
             return ("BlueStacks nao detectado. Abra o emulador antes de otimizar.", logs);
         }
 
-        var plan = _planBuilder.Build(config, report.RecordingModeDetected);
+        var effectiveConfig = CloneWithEffectiveProfile(config, effectiveProfile);
+        var plan = _planBuilder.Build(effectiveConfig, report.RecordingModeDetected);
         var effectiveAllowedProcesses = plan.EffectiveAllowedProcesses;
 
-        _session.ActiveProfile = config.SelectedProfile;
+        _session.ActiveProfile = effectiveProfile;
 
         logs.Add($"Emulador detectado: {string.Join(", ", emulatorProcesses.Select(p => p.ProcessName).Distinct())}");
-        logs.Add($"Perfil selecionado: {config.SelectedProfile}");
+        logs.Add($"Perfil selecionado: {effectiveProfile}");
         logs.Add(config.EnableFreeFireMode
             ? "Modo Free Fire + BlueStacks ativo."
             : "Modo padrao de otimizacao ativo.");
@@ -220,7 +241,43 @@ public class OptimizerService
             _performance.EnableHighPerformancePowerPlan(_session);
             report.PowerPlanActivated = true;
             logs.Add("Plano de energia de alto desempenho ativado.");
+            PersistRecoverableSessionState();
         }
+
+        if (effectiveProfile.Equals("Ultra", StringComparison.OrdinalIgnoreCase))
+        {
+            report.UltraVisualTweaksApplied = _performance.ApplyUltraVisualTweaks(_session);
+            logs.Add(report.UltraVisualTweaksApplied
+                ? "Perfil Ultra: efeitos visuais do Windows reduzidos para modo basico."
+                : "Perfil Ultra: ajustes visuais do Windows nao puderam ser aplicados por completo.");
+
+            if (report.UltraVisualTweaksApplied)
+                PersistRecoverableSessionState();
+        }
+
+        if (effectiveConfig.EnableTurboMode)
+        {
+            report.TurboModeApplied = _turboModeService.ApplyTurboMode(_session);
+            logs.Add(report.TurboModeApplied
+                ? "Modo TURBO FPS ativado."
+                : "Modo TURBO FPS nao foi aplicado por completo.");
+
+            if (report.TurboModeApplied)
+                PersistRecoverableSessionState();
+        }
+        else
+        {
+            logs.Add("Modo TURBO FPS desativado na configuracao.");
+        }
+
+        var memoryOptimization = _memoryOptimizerService.Optimize(
+            effectiveProfile,
+            effectiveAllowedProcesses,
+            emulatorProcesses.Select(static x => x.ProcessName).Distinct(StringComparer.OrdinalIgnoreCase).ToList());
+        ApplyMemoryOptimizationToReport(report, memoryOptimization);
+        logs.Add(memoryOptimization.Applied
+            ? $"Memoria otimizada: {memoryOptimization.TrimmedProcessCount} processo(s) compactado(s), ~{memoryOptimization.EstimatedFreedMb:0.#} MB liberados."
+            : $"Memoria otimizada: nenhuma compactacao relevante no perfil {effectiveProfile}.");
 
         if (config.EnableOverlayDetection)
         {
@@ -253,6 +310,7 @@ public class OptimizerService
 
         _session.IsGameModeActive = true;
         report.ProcessesAfter = Math.Max(0, report.ProcessesBefore - report.KilledCount);
+        report.TopProcessesAfter = _processAnalyzer.GetTopProcesses();
 
         stopwatch.Stop();
         report.Elapsed = stopwatch.Elapsed;
@@ -264,6 +322,39 @@ public class OptimizerService
         logs.Add($"Tempo da otimizacao: {report.Elapsed.TotalMilliseconds:0} ms");
 
         return ($"Modo jogo ativado.\n{report.KilledCount} encerrado(s), {report.SuspendedCount} suspenso(s).", logs);
+    }
+
+    public MemoryOptimizationExecutionResult OptimizeMemory(string profile, bool freeFireModeEnabled)
+    {
+        var logs = new List<string>();
+        var config = _configService.Load();
+        config.SelectedProfile = profile;
+        config.EnableFreeFireMode = freeFireModeEnabled;
+
+        var effectiveProfile = ResolveEffectiveProfile(config, logs);
+        var effectiveConfig = CloneWithEffectiveProfile(config, effectiveProfile);
+        var plan = _planBuilder.Build(effectiveConfig, recordingMode: false);
+        var emulatorProcesses = _scanner.FindProcessesByNames(config.EmulatorProcesses);
+        var result = _memoryOptimizerService.Optimize(
+            effectiveProfile,
+            plan.EffectiveAllowedProcesses,
+            emulatorProcesses.Select(static x => x.ProcessName).Distinct(StringComparer.OrdinalIgnoreCase).ToList());
+
+        logs.Add(result.Applied
+            ? $"Memoria otimizada com perfil {effectiveProfile}: {result.TrimmedProcessCount} processo(s), ~{result.EstimatedFreedMb:0.#} MB liberados."
+            : $"Memoria otimizada com perfil {effectiveProfile}: nenhuma sobra relevante foi encontrada.");
+
+        if (result.TrimmedProcesses.Count > 0)
+            logs.Add($"Compactados: {string.Join(", ", result.TrimmedProcesses.Take(6))}");
+
+        return new MemoryOptimizationExecutionResult
+        {
+            Status = result.Applied
+                ? $"Memoria otimizada. ~{result.EstimatedFreedMb:0.#} MB liberados."
+                : "Memoria ja estava enxuta para este perfil.",
+            Logs = logs,
+            Result = result
+        };
     }
 
     public (string status, List<string> logs) Restore()
@@ -291,8 +382,16 @@ public class OptimizerService
         _timerResolution.Restore(_session);
         logs.Add("Timer resolution restaurado.");
 
+        _turboModeService.RestoreTurboMode(_session);
+        logs.Add("Modo TURBO FPS restaurado.");
+
         _performance.RestorePowerPlan(_session);
         logs.Add("Plano de energia anterior restaurado.");
+
+        _performance.RestoreUltraVisualTweaks(_session);
+        logs.Add("Efeitos visuais do Windows restaurados.");
+
+        _sessionStateStore.Clear();
 
         _session.IsGameModeActive = false;
         _session.ChangedPriorities.Clear();
@@ -300,9 +399,47 @@ public class OptimizerService
         _session.KilledProcesses.Clear();
         _session.PreviousPowerSchemeGuid = null;
         _session.DetectedOverlays.Clear();
+        _session.TurboUserPreferencesMaskBackup = null;
+        _session.TurboModeApplied = false;
+        _session.PreviousCurrentProcessPriority = null;
+        _session.VisualEffectsSnapshot = null;
+        _session.UltraVisualTweaksApplied = false;
         _session.ActiveProfile = "Seguro";
 
         return ("Modo normal restaurado.", logs);
+    }
+
+    public List<string> RecoverPendingSystemState()
+    {
+        var logs = new List<string>();
+        var pendingState = _sessionStateStore.Load();
+
+        if (pendingState is null)
+            return logs;
+
+        logs.Add($"Recuperacao detectada: sessao anterior encontrada ({pendingState.ActiveProfile}, {pendingState.SavedAtUtc:yyyy-MM-dd HH:mm:ss} UTC).");
+
+        if (pendingState.UltraVisualTweaksApplied)
+        {
+            _performance.RestoreUltraVisualTweaks(pendingState);
+            logs.Add("Recuperacao: efeitos visuais do Windows restaurados.");
+        }
+
+        if (pendingState.TurboModeApplied)
+        {
+            _turboModeService.RestoreTurboMode(pendingState);
+            logs.Add("Recuperacao: modo TURBO FPS restaurado.");
+        }
+
+        if (pendingState.HighPerformanceApplied)
+        {
+            _performance.RestorePowerPlan(pendingState);
+            logs.Add("Recuperacao: plano de energia anterior restaurado.");
+        }
+
+        _sessionStateStore.Clear();
+        logs.Add("Recuperacao concluida.");
+        return logs;
     }
 
     public bool IsGameModeActive()
@@ -332,5 +469,73 @@ public class OptimizerService
             runningProcesses,
             effectiveAllowedProcesses,
             recordingMode);
+    }
+
+    private void PersistRecoverableSessionState()
+    {
+        var state = new PerformanceSessionState
+        {
+            ActiveProfile = _session.ActiveProfile,
+            PreviousPowerSchemeGuid = _session.PreviousPowerSchemeGuid,
+            HighPerformanceApplied = !string.IsNullOrWhiteSpace(_session.PreviousPowerSchemeGuid),
+            TurboModeApplied = _session.TurboModeApplied,
+            TurboUserPreferencesMaskBackup = _session.TurboUserPreferencesMaskBackup,
+            UltraVisualTweaksApplied = _session.UltraVisualTweaksApplied,
+            VisualEffectsSnapshot = _session.VisualEffectsSnapshot
+        };
+
+        _sessionStateStore.Save(state);
+    }
+
+    private static void ApplyMemoryOptimizationToReport(TechnicalReport report, MemoryOptimizationResult result)
+    {
+        report.MemoryOptimizationApplied = result.Applied;
+        report.MemoryOptimizedProcessCount = result.TrimmedProcessCount;
+        report.MemoryRecoveredMb = result.EstimatedFreedMb;
+        report.RamUsageBeforePercent = result.RamUsageBeforePercent;
+        report.RamUsageAfterPercent = result.RamUsageAfterPercent;
+        report.MemoryOptimizedProcesses = result.TrimmedProcesses;
+    }
+
+    private string ResolveEffectiveProfile(AppConfig config, List<string> logs)
+    {
+        if (!config.SelectedProfile.Equals("Auto", StringComparison.OrdinalIgnoreCase))
+            return config.SelectedProfile;
+
+        var totalRamGb = _metricsService.GetTotalRamGb();
+        var usedRamGb = _metricsService.GetUsedRamGb();
+        var effectiveProfile = _automaticProfileService.SelectProfile(usedRamGb, totalRamGb);
+        logs.Add($"Perfil automatico escolhido: {effectiveProfile} (RAM {usedRamGb:0.##}/{totalRamGb:0.##} GB).");
+        return effectiveProfile;
+    }
+
+    private static AppConfig CloneWithEffectiveProfile(AppConfig config, string effectiveProfile)
+    {
+        return new AppConfig
+        {
+            AllowedProcesses = new List<string>(config.AllowedProcesses),
+            FreeFireAllowedProcesses = new List<string>(config.FreeFireAllowedProcesses),
+            SafeBlacklist = new List<string>(config.SafeBlacklist),
+            StrongBlacklist = new List<string>(config.StrongBlacklist),
+            UltraBlacklist = new List<string>(config.UltraBlacklist),
+            FreeFireSafeBlacklist = new List<string>(config.FreeFireSafeBlacklist),
+            FreeFireStrongBlacklist = new List<string>(config.FreeFireStrongBlacklist),
+            FreeFireUltraBlacklist = new List<string>(config.FreeFireUltraBlacklist),
+            RecordingProcesses = new List<string>(config.RecordingProcesses),
+            EmulatorProcesses = new List<string>(config.EmulatorProcesses),
+            UseHighPerformancePlan = config.UseHighPerformancePlan,
+            SetEmulatorHighPriority = config.SetEmulatorHighPriority,
+            EnableTimerResolution = config.EnableTimerResolution,
+            EnableAffinityTuning = config.EnableAffinityTuning,
+            EnableOverlayDetection = config.EnableOverlayDetection,
+            EnableWatcher = config.EnableWatcher,
+            EnableTurboMode = config.EnableTurboMode,
+            TelemetryEnabled = config.TelemetryEnabled,
+            AutoOptimizeOnStartup = config.AutoOptimizeOnStartup,
+            LaunchOnWindowsStartup = config.LaunchOnWindowsStartup,
+            StartupPreferenceInitialized = config.StartupPreferenceInitialized,
+            EnableFreeFireMode = config.EnableFreeFireMode,
+            SelectedProfile = effectiveProfile
+        };
     }
 }

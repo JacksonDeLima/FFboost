@@ -4,6 +4,15 @@ namespace FFBoost.Core.Services;
 
 public class SystemMetricsService
 {
+    public double GetTotalRamGb()
+    {
+        var memoryStatus = new MEMORYSTATUSEX();
+        if (!GlobalMemoryStatusEx(memoryStatus))
+            return 0;
+
+        return Math.Round(memoryStatus.ullTotalPhys / 1024d / 1024d / 1024d, 2);
+    }
+
     public double GetUsedRamGb()
     {
         var memoryStatus = new MEMORYSTATUSEX();
@@ -12,6 +21,15 @@ public class SystemMetricsService
 
         ulong used = memoryStatus.ullTotalPhys - memoryStatus.ullAvailPhys;
         return Math.Round(used / 1024d / 1024d / 1024d, 2);
+    }
+
+    public double GetRamUsagePercentage()
+    {
+        var memoryStatus = new MEMORYSTATUSEX();
+        if (!GlobalMemoryStatusEx(memoryStatus))
+            return 0;
+
+        return Math.Round((double)memoryStatus.dwMemoryLoad, 2);
     }
 
     public double GetCpuUsagePercentage()

@@ -88,6 +88,8 @@ public class ConfigService
         config.RecordingProcesses = NormalizeList(config.RecordingProcesses);
         config.EmulatorProcesses = NormalizeList(config.EmulatorProcesses);
         config.SelectedProfile = string.IsNullOrWhiteSpace(config.SelectedProfile) ? "Seguro" : config.SelectedProfile.Trim();
+        if (!IsKnownProfile(config.SelectedProfile))
+            config.SelectedProfile = "Seguro";
     }
 
     private static List<string> NormalizeList(IEnumerable<string> items)
@@ -98,6 +100,14 @@ public class ConfigService
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .OrderBy(static x => x, StringComparer.OrdinalIgnoreCase)
             .ToList();
+    }
+
+    private static bool IsKnownProfile(string profile)
+    {
+        return profile.Equals("Seguro", StringComparison.OrdinalIgnoreCase) ||
+               profile.Equals("Forte", StringComparison.OrdinalIgnoreCase) ||
+               profile.Equals("Ultra", StringComparison.OrdinalIgnoreCase) ||
+               profile.Equals("Auto", StringComparison.OrdinalIgnoreCase);
     }
 
     private static AppConfig CreateDefaultConfig()
@@ -140,64 +150,72 @@ public class ConfigService
             {
                 "chrome",
                 "msedge",
-                "opera",
                 "firefox",
+                "opera",
+                "brave",
                 "onedrive",
                 "teams",
                 "spotify",
-                "brave"
+                "telegram",
+                "whatsapp",
+                "notion"
             },
             FreeFireSafeBlacklist =
             {
                 "chrome",
                 "msedge",
-                "opera",
-                "firefox",
-                "onedrive",
-                "teams",
                 "spotify",
-                "brave",
-                "adobeipcbroker"
+                "telegram",
+                "whatsapp"
             },
             StrongBlacklist =
             {
-                "telegram",
-                "whatsapp",
-                "notion",
-                "epicgameslauncher",
                 "steam",
-                "steamwebhelper"
+                "steamwebhelper",
+                "epicgameslauncher",
+                "battle.net",
+                "uplay",
+                "upc",
+                "zoom",
+                "webex",
+                "anydesk",
+                "parsecd",
+                "dropbox",
+                "googledrivefs",
+                "adobeipcbroker",
+                "creative cloud",
+                "ccxprocess"
             },
             FreeFireStrongBlacklist =
             {
-                "telegram",
-                "whatsapp",
-                "notion",
-                "epicgameslauncher",
                 "steam",
-                "steamwebhelper",
-                "galaxyclient",
-                "riotclientservices"
+                "epicgameslauncher",
+                "battle.net",
+                "uplay",
+                "zoom",
+                "webex"
             },
             UltraBlacklist =
             {
                 "discordptb",
-                "webex",
-                "zoom",
-                "uplay",
-                "upc",
-                "battle.net"
+                "slack",
+                "skype",
+                "qbittorrent",
+                "utorrent",
+                "javaw",
+                "pythonw",
+                "acrobat",
+                "winword",
+                "excel",
+                "powerpnt"
             },
             FreeFireUltraBlacklist =
             {
                 "discordptb",
-                "webex",
-                "zoom",
-                "uplay",
-                "upc",
-                "battle.net",
-                "ubisoftconnect",
-                "ea"
+                "slack",
+                "qbittorrent",
+                "javaw",
+                "pythonw"
             },
             RecordingProcesses =
             {
@@ -219,10 +237,13 @@ public class ConfigService
             EnableAffinityTuning = true,
             EnableOverlayDetection = true,
             EnableWatcher = true,
+            EnableTurboMode = true,
             TelemetryEnabled = true,
             AutoOptimizeOnStartup = true,
-            EnableFreeFireMode = false,
-            SelectedProfile = "Seguro"
+            LaunchOnWindowsStartup = true,
+            StartupPreferenceInitialized = false,
+            EnableFreeFireMode = true,
+            SelectedProfile = "Forte"
         };
     }
 }

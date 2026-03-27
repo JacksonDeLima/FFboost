@@ -37,54 +37,62 @@
     "brave",
     "onedrive",
     "teams",
-    "spotify"
+    "spotify",
+    "telegram",
+    "whatsapp",
+    "notion"
   ],
   "freeFireSafeBlacklist": [
     "chrome",
     "msedge",
-    "firefox",
-    "opera",
-    "brave",
-    "onedrive",
-    "teams",
     "spotify",
-    "adobeipcbroker"
+    "telegram",
+    "whatsapp"
   ],
   "strongBlacklist": [
-    "telegram",
-    "whatsapp",
-    "notion",
-    "epicgameslauncher",
-    "steam",
-    "steamwebhelper"
-  ],
-  "freeFireStrongBlacklist": [
-    "telegram",
-    "whatsapp",
-    "notion",
-    "epicgameslauncher",
     "steam",
     "steamwebhelper",
-    "galaxyclient",
-    "riotclientservices"
+    "epicgameslauncher",
+    "battle.net",
+    "uplay",
+    "upc",
+    "zoom",
+    "webex",
+    "anydesk",
+    "parsecd",
+    "dropbox",
+    "googledrivefs",
+    "adobeipcbroker",
+    "creative cloud",
+    "ccxprocess"
+  ],
+  "freeFireStrongBlacklist": [
+    "steam",
+    "epicgameslauncher",
+    "battle.net",
+    "uplay",
+    "zoom",
+    "webex"
   ],
   "ultraBlacklist": [
     "discordptb",
-    "webex",
-    "zoom",
-    "uplay",
-    "upc",
-    "battle.net"
+    "slack",
+    "skype",
+    "qbittorrent",
+    "utorrent",
+    "javaw",
+    "pythonw",
+    "acrobat",
+    "winword",
+    "excel",
+    "powerpnt"
   ],
   "freeFireUltraBlacklist": [
     "discordptb",
-    "webex",
-    "zoom",
-    "uplay",
-    "upc",
-    "battle.net",
-    "ubisoftconnect",
-    "ea"
+    "slack",
+    "qbittorrent",
+    "javaw",
+    "pythonw"
   ],
   "recordingProcesses": [
     "obs64",
@@ -104,8 +112,11 @@
   "enableAffinityTuning": true,
   "enableOverlayDetection": true,
   "enableWatcher": true,
+  "enableTurboMode": true,
   "telemetryEnabled": true,
   "autoOptimizeOnStartup": true,
-  "enableFreeFireMode": false,
-  "selectedProfile": "Seguro"
+  "launchOnWindowsStartup": true,
+  "startupPreferenceInitialized": false,
+  "enableFreeFireMode": true,
+  "selectedProfile": "Forte"
 }
