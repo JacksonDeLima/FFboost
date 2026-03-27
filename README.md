@@ -20,6 +20,18 @@
   <b>Assinatura visual:</b> 文Ｉｌｕｓｉｏｎ
 </p>
 
+<p align="center">
+  <a href="https://github.com/JacksonDeLima/FFboost/releases/latest">
+    <img src="https://img.shields.io/badge/Ver%20Release-GitHub-FF6C48?style=for-the-badge" alt="Ver release no GitHub"/>
+  </a>
+  <a href="https://github.com/JacksonDeLima/FFboost/releases/latest/download/FFBoost-Setup.exe">
+    <img src="https://img.shields.io/badge/Baixar%20Instalador-FFBoost-00E5FF?style=for-the-badge" alt="Baixar instalador do FF Boost"/>
+  </a>
+  <a href="https://github.com/JacksonDeLima/FFboost/releases/latest/download/FFBoost.exe">
+    <img src="https://img.shields.io/badge/Baixar%20Executavel-FFBoost-111827?style=for-the-badge" alt="Baixar executável do FF Boost"/>
+  </a>
+</p>
+
 ---
 
 ## Visão Geral
