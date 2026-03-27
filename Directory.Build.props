@@ -6,9 +6,9 @@
     <Company>FF Boost Studio</Company>
     <Authors>FF Boost Studio</Authors>
     <Product>FF Boost</Product>
-    <AssemblyVersion>1.0.0.0</AssemblyVersion>
-    <FileVersion>1.0.0.0</FileVersion>
-    <Version>1.0.0</Version>
-    <InformationalVersion>1.0.0-gamer</InformationalVersion>
+    <AssemblyVersion>4.3.0.0</AssemblyVersion>
+    <FileVersion>4.3.0.0</FileVersion>
+    <Version>4.3.0</Version>
+    <InformationalVersion>4.3.0-gamer</InformationalVersion>
   </PropertyGroup>
 </Project>

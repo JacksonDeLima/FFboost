@@ -1,0 +1,122 @@
+{
+  "allowedProcesses": [
+    "HD-Player",
+    "HD-Frontend",
+    "BlueStacks",
+    "Bluestacks",
+    "Discord",
+    "obs64",
+    "medal",
+    "action",
+    "streamlabsobs",
+    "explorer",
+    "dwm",
+    "nvcontainer",
+    "NVIDIA Share"
+  ],
+  "freeFireAllowedProcesses": [
+    "HD-Player",
+    "HD-Frontend",
+    "BlueStacks",
+    "Bluestacks",
+    "Discord",
+    "obs64",
+    "medal",
+    "action",
+    "streamlabsobs",
+    "explorer",
+    "dwm",
+    "nvcontainer",
+    "NVIDIA Share"
+  ],
+  "safeBlacklist": [
+    "chrome",
+    "msedge",
+    "firefox",
+    "opera",
+    "brave",
+    "onedrive",
+    "teams",
+    "spotify",
+    "telegram",
+    "whatsapp",
+    "notion"
+  ],
+  "freeFireSafeBlacklist": [
+    "chrome",
+    "msedge",
+    "spotify",
+    "telegram",
+    "whatsapp"
+  ],
+  "strongBlacklist": [
+    "steam",
+    "steamwebhelper",
+    "epicgameslauncher",
+    "battle.net",
+    "uplay",
+    "upc",
+    "zoom",
+    "webex",
+    "anydesk",
+    "parsecd",
+    "dropbox",
+    "googledrivefs",
+    "adobeipcbroker",
+    "creative cloud",
+    "ccxprocess"
+  ],
+  "freeFireStrongBlacklist": [
+    "steam",
+    "epicgameslauncher",
+    "battle.net",
+    "uplay",
+    "zoom",
+    "webex"
+  ],
+  "ultraBlacklist": [
+    "discordptb",
+    "slack",
+    "skype",
+    "qbittorrent",
+    "utorrent",
+    "javaw",
+    "pythonw",
+    "acrobat",
+    "winword",
+    "excel",
+    "powerpnt"
+  ],
+  "freeFireUltraBlacklist": [
+    "discordptb",
+    "slack",
+    "qbittorrent",
+    "javaw",
+    "pythonw"
+  ],
+  "recordingProcesses": [
+    "obs64",
+    "medal",
+    "action",
+    "streamlabsobs"
+  ],
+  "emulatorProcesses": [
+    "HD-Player",
+    "BlueStacks",
+    "Bluestacks",
+    "HD-Frontend"
+  ],
+  "useHighPerformancePlan": true,
+  "setEmulatorHighPriority": true,
+  "enableTimerResolution": true,
+  "enableAffinityTuning": true,
+  "enableOverlayDetection": true,
+  "enableWatcher": true,
+  "enableTurboMode": true,
+  "telemetryEnabled": true,
+  "autoOptimizeOnStartup": true,
+  "launchOnWindowsStartup": true,
+  "startupPreferenceInitialized": false,
+  "enableFreeFireMode": true,
+  "selectedProfile": "Forte"
+}

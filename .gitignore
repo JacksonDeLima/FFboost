@@ -1,6 +1,15 @@
 bin/
 obj/
-dist/
+dist/*
+!dist/current/
+dist/current/*
+!dist/current/config.json
+.dotnet-cli/
+
+logs/
+telemetry/
+backups/
+state/
 
 Installer/Payload/FFBoost.exe
 Installer/Payload/config.json
