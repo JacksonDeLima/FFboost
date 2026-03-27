@@ -9,6 +9,9 @@ public class AboutForm : Form
     public AboutForm()
     {
         var version = Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "1.0.0";
+        var infoVersion = Assembly.GetExecutingAssembly()
+            .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?
+            .InformationalVersion ?? "1.0.0-gamer";
 
         Text = "Sobre FF Boost";
         StartPosition = FormStartPosition.CenterParent;
@@ -16,7 +19,7 @@ public class AboutForm : Form
         MaximizeBox = false;
         MinimizeBox = false;
         ShowInTaskbar = false;
-        ClientSize = new Size(420, 300);
+        ClientSize = new Size(500, 360);
         BackColor = Color.FromArgb(4, 8, 18);
         ForeColor = Color.White;
         Font = new Font("Segoe UI", 10F, FontStyle.Regular, GraphicsUnit.Point);
@@ -51,13 +54,18 @@ public class AboutForm : Form
             TextAlign = ContentAlignment.TopCenter,
             BackColor = Color.Transparent,
             ForeColor = Color.FromArgb(220, 228, 245),
-            Font = new Font("Consolas", 10.5F, FontStyle.Regular, GraphicsUnit.Point),
+            Font = new Font("Consolas", 10F, FontStyle.Regular, GraphicsUnit.Point),
             Text =
                 $"Versao: {version}{Environment.NewLine}" +
+                $"Build: {infoVersion}{Environment.NewLine}" +
                 "Produto: FF Boost" + Environment.NewLine +
                 "Studio: FF Boost Studio" + Environment.NewLine +
                 $"Assinatura: {SignatureText}{Environment.NewLine}{Environment.NewLine}" +
-                "Otimizador gamer para BlueStacks e Free Fire."
+                "Otimizador gamer para BlueStacks e Free Fire." + Environment.NewLine +
+                "Startup automatico na primeira execucao." + Environment.NewLine +
+                "Inicializacao minimizada na bandeja." + Environment.NewLine +
+                "Watcher do emulador com otimizacao automatica." + Environment.NewLine +
+                "Restore automatico ao fechar o BlueStacks."
         };
 
         var btnClose = new Button

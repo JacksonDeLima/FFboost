@@ -5,13 +5,21 @@ namespace FFBoost.UI;
 
 internal static class AppBootstrapper
 {
-    public static MainForm CreateMainForm()
+    public static MainForm CreateMainForm(string[]? args = null)
     {
         var baseDirectory = AppDomain.CurrentDomain.BaseDirectory;
         var configPath = Path.Combine(baseDirectory, "config.json");
 
         var configService = new ConfigService(configPath);
+        var sessionStateStore = new PerformanceSessionStateStore(baseDirectory);
+        var processRules = new ProcessRules();
+        var metricsService = new SystemMetricsService();
+        var processAnalyzerService = new ProcessAnalyzerService();
+        var automaticProfileService = new AutomaticProfileService();
+        var turboModeService = new TurboModeService();
+        var performanceReportService = new PerformanceReportService();
         var processScanner = new ProcessScanner();
+        var memoryOptimizerService = new MemoryOptimizerService(processRules, metricsService);
         var optimizer = new OptimizerService(
             configService,
             processScanner,
@@ -23,9 +31,14 @@ internal static class AppBootstrapper
             new ExplorerWindowService(),
             new OptimizationPlanBuilder(),
             new OptimizationSuggestionService(),
-            new ProcessRules());
+            processAnalyzerService,
+            metricsService,
+            automaticProfileService,
+            turboModeService,
+            memoryOptimizerService,
+            processRules,
+            sessionStateStore);
         var adminService = new AdminService();
-        var metricsService = new SystemMetricsService();
         var logFileService = new LogFileService(baseDirectory);
         var telemetryService = new TelemetryService(baseDirectory);
         var coordinator = new OptimizationCoordinatorService(
@@ -33,17 +46,22 @@ internal static class AppBootstrapper
             metricsService,
             logFileService,
             telemetryService,
-            configService);
+            configService,
+            performanceReportService);
         var watcherService = new GameWatcherService(processScanner, configService);
+        var startupService = new StartupService();
 
         return new MainForm(
             optimizer,
             adminService,
             configService,
+            startupService,
             metricsService,
             logFileService,
             telemetryService,
             coordinator,
-            watcherService);
+            watcherService,
+            processAnalyzerService,
+            args?.Any(x => string.Equals(x, "--tray", StringComparison.OrdinalIgnoreCase)) == true);
     }
 }

@@ -56,7 +56,7 @@ public class SplashForm : Form
         Controls.Add(titleLabel);
         Controls.Add(accentBar);
 
-        _timer = new System.Windows.Forms.Timer { Interval = 1300 };
+        _timer = new System.Windows.Forms.Timer { Interval = 320 };
         _timer.Tick += (_, _) =>
         {
             _timer.Stop();
