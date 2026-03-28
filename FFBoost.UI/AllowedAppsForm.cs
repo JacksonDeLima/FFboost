@@ -2,7 +2,7 @@ using FFBoost.Core.Services;
 
 namespace FFBoost.UI;
 
-public class AllowedAppsForm : Form
+public class AllowedAppsForm : ThemedDialogForm
 {
     private const string SignatureText = "\u6587\uFF29\uFF4C\uFF55\uFF53\uFF49\uFF4F\uFF4E";
 
@@ -15,19 +15,14 @@ public class AllowedAppsForm : Form
     private readonly TextBox _txtRunningFilter;
     private readonly Label _lblFeedback;
 
-    public AllowedAppsForm()
+    public AllowedAppsForm() : base("Apps Permitidos", Color.FromArgb(43, 184, 255))
     {
         _configPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "config.json");
         _configService = new ConfigService(_configPath);
         _scanner = new ProcessScanner();
 
-        Text = "Apps Permitidos";
-        StartPosition = FormStartPosition.CenterParent;
-        ClientSize = new Size(760, 560);
-        MinimumSize = new Size(760, 560);
-        BackColor = Color.FromArgb(4, 8, 18);
-        ForeColor = Color.White;
-        Font = new Font("Segoe UI", 10F, FontStyle.Regular, GraphicsUnit.Point);
+        ClientSize = new Size(628, 548);
+        MinimumSize = new Size(628, 548);
         Padding = new Padding(12);
 
         var titleLabel = new Label
@@ -153,7 +148,10 @@ public class AllowedAppsForm : Form
         };
 
         shell.Controls.Add(card);
-        Controls.Add(shell);
+        DialogContent.Controls.Add(shell);
+
+        Shown += (_, _) => ApplyOwnerBoundedSize();
+        Resize += (_, _) => UiGeometry.ApplyRoundedRegion(this, 18);
 
         LoadAllowedApps();
         LoadRunningProcesses();
@@ -301,5 +299,54 @@ public class AllowedAppsForm : Form
     private void BtnRefreshRunning_Click(object? sender, EventArgs e)
     {
         LoadRunningProcesses();
+    }
+
+    private void ApplyOwnerBoundedSize()
+    {
+        var preferredSize = new Size(628, 548);
+        var minimumSize = new Size(580, 500);
+        var boundedSize = CalculateBoundedSize(preferredSize, minimumSize);
+
+        ClientSize = boundedSize;
+        MinimumSize = boundedSize;
+        MaximumSize = boundedSize;
+        CenterToOwnerContent(boundedSize);
+        UiGeometry.ApplyRoundedRegion(this, 18);
+    }
+
+    private Size CalculateBoundedSize(Size preferredSize, Size minimumSize)
+    {
+        var referenceControl = Owner as Control ?? this;
+        var workingArea = Screen.FromControl(referenceControl).WorkingArea;
+        var ownerClientSize = Owner?.ClientSize ?? Size.Empty;
+
+        var maxWidth = ownerClientSize.Width > 0
+            ? Math.Min(ownerClientSize.Width - 28, workingArea.Width - 60)
+            : workingArea.Width - 60;
+        var maxHeight = ownerClientSize.Height > 0
+            ? Math.Min(ownerClientSize.Height - 36, workingArea.Height - 60)
+            : workingArea.Height - 60;
+
+        maxWidth = Math.Max(minimumSize.Width, maxWidth);
+        maxHeight = Math.Max(minimumSize.Height, maxHeight);
+
+        return new Size(
+            Math.Min(preferredSize.Width, maxWidth),
+            Math.Min(preferredSize.Height, maxHeight));
+    }
+
+    private void CenterToOwnerContent(Size boundedSize)
+    {
+        if (Owner is null)
+            return;
+
+        var ownerCenter = Owner.PointToScreen(new Point(Owner.ClientSize.Width / 2, Owner.ClientSize.Height / 2));
+        var targetLeft = ownerCenter.X - (boundedSize.Width / 2);
+        var targetTop = ownerCenter.Y - (boundedSize.Height / 2) + 18;
+        var workingArea = Screen.FromControl(Owner).WorkingArea;
+
+        Location = new Point(
+            Math.Max(workingArea.Left, Math.Min(targetLeft, workingArea.Right - Width)),
+            Math.Max(workingArea.Top, Math.Min(targetTop, workingArea.Bottom - Height)));
     }
 }

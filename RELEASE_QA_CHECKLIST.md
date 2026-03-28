@@ -12,7 +12,7 @@ Release atual: `4.3.0`
 
 - painel principal abre sem controles cortados
 - texto do menu da bandeja aparece por completo
-- tela `Sobre` mostra os metadados da `v4.3`
+- tela `Sobre` mostra os metadados da `4.3.0`
 - tela de apps permitidos acomoda todos os controles
 - logo, banner e assinatura renderizam corretamente
 

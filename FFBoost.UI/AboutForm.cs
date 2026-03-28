@@ -2,27 +2,18 @@ using System.Reflection;
 
 namespace FFBoost.UI;
 
-public class AboutForm : Form
+public class AboutForm : ThemedDialogForm
 {
     private const string SignatureText = "\u6587\uFF29\uFF4C\uFF55\uFF53\uFF49\uFF4F\uFF4E";
 
-    public AboutForm()
+    public AboutForm() : base("Sobre FF Boost", Color.FromArgb(65, 167, 255))
     {
         var version = Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "1.0.0";
         var infoVersion = Assembly.GetExecutingAssembly()
             .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?
             .InformationalVersion ?? "1.0.0-gamer";
 
-        Text = "Sobre FF Boost";
-        StartPosition = FormStartPosition.CenterParent;
-        FormBorderStyle = FormBorderStyle.FixedDialog;
-        MaximizeBox = false;
-        MinimizeBox = false;
-        ShowInTaskbar = false;
         ClientSize = new Size(500, 360);
-        BackColor = Color.FromArgb(4, 8, 18);
-        ForeColor = Color.White;
-        Font = new Font("Segoe UI", 10F, FontStyle.Regular, GraphicsUnit.Point);
         Padding = new Padding(12);
 
         var titleLabel = new Label
@@ -118,6 +109,6 @@ public class AboutForm : Form
         card.Controls.Add(signatureLabel);
         card.Controls.Add(titleLabel);
         shell.Controls.Add(card);
-        Controls.Add(shell);
+        DialogContent.Controls.Add(shell);
     }
 }

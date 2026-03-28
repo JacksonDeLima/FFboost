@@ -5,7 +5,7 @@ using FFBoost.Core.Services;
 
 namespace FFBoost.UI;
 
-public class TopProcessesForm : Form
+public class TopProcessesForm : ThemedDialogForm
 {
     private readonly ProcessAnalyzerService _processAnalyzerService;
     private readonly ProcessKiller _processKiller = new();
@@ -19,20 +19,12 @@ public class TopProcessesForm : Form
     private readonly Label _lblProcessPath;
     private readonly Label _lblProcessDescription;
 
-    public TopProcessesForm(ProcessAnalyzerService processAnalyzerService)
+    public TopProcessesForm(ProcessAnalyzerService processAnalyzerService) : base("Top Processos Pesados", Color.FromArgb(255, 156, 72))
     {
         _processAnalyzerService = processAnalyzerService;
 
-        Text = "Top Processos Pesados";
-        StartPosition = FormStartPosition.CenterParent;
-        FormBorderStyle = FormBorderStyle.FixedDialog;
-        MaximizeBox = false;
-        MinimizeBox = false;
-        ShowInTaskbar = false;
-        ClientSize = new Size(820, 620);
-        BackColor = Color.FromArgb(4, 8, 18);
-        ForeColor = Color.White;
-        Font = new Font("Segoe UI", 10F, FontStyle.Regular, GraphicsUnit.Point);
+        ClientSize = new Size(632, 612);
+        MinimumSize = new Size(632, 612);
         Padding = new Padding(10);
 
         var topBar = BuildTopBar();
@@ -76,15 +68,16 @@ public class TopProcessesForm : Form
             UseCompatibleStateImageBehavior = false,
             View = View.Details
         };
-        _listView.Columns.Add("Rank", 60, HorizontalAlignment.Left);
-        _listView.Columns.Add("Processo", 250, HorizontalAlignment.Left);
-        _listView.Columns.Add("RAM", 120, HorizontalAlignment.Right);
-        _listView.Columns.Add("CPU", 100, HorizontalAlignment.Right);
-        _listView.Columns.Add("Disco", 130, HorizontalAlignment.Right);
+        _listView.Columns.Add("Rank", 56, HorizontalAlignment.Left);
+        _listView.Columns.Add("Processo", 190, HorizontalAlignment.Left);
+        _listView.Columns.Add("RAM", 96, HorizontalAlignment.Right);
+        _listView.Columns.Add("CPU", 84, HorizontalAlignment.Right);
+        _listView.Columns.Add("Disco", 112, HorizontalAlignment.Right);
         _listView.DrawColumnHeader += ListView_DrawColumnHeader;
         _listView.DrawItem += ListView_DrawItem;
         _listView.DrawSubItem += ListView_DrawSubItem;
         _listView.SelectedIndexChanged += (_, _) => UpdateSelectionDetails();
+        _listView.Resize += (_, _) => AdjustListViewColumns();
 
         _lblProcessName = CreateDetailLabel("Selecione um processo para ver detalhes.");
         _lblRiskBadge = new Label
@@ -105,7 +98,7 @@ public class TopProcessesForm : Form
         var detailsCard = new NeonPanel
         {
             Dock = DockStyle.Bottom,
-            Height = 156,
+            Height = 142,
             BorderColor = Color.FromArgb(34, 112, 204),
             GlowColor = Color.FromArgb(42, 154, 255),
             FillTop = Color.FromArgb(8, 12, 26),
@@ -165,7 +158,7 @@ public class TopProcessesForm : Form
         var btnRefresh = new Button
         {
             Text = "Atualizar",
-            Width = 140,
+            Width = 124,
             Height = 40,
             BackColor = Color.FromArgb(23, 185, 255),
             ForeColor = Color.White,
@@ -179,7 +172,7 @@ public class TopProcessesForm : Form
         _btnKill = new Button
         {
             Text = "Encerrar Processo",
-            Width = 170,
+            Width = 154,
             Height = 40,
             BackColor = Color.FromArgb(160, 48, 48),
             ForeColor = Color.White,
@@ -193,7 +186,7 @@ public class TopProcessesForm : Form
         var btnClose = new Button
         {
             Text = "Fechar",
-            Width = 140,
+            Width = 124,
             Height = 40,
             BackColor = Color.FromArgb(24, 30, 54),
             ForeColor = Color.White,
@@ -259,7 +252,10 @@ public class TopProcessesForm : Form
         root.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
         root.Controls.Add(topBar, 0, 0);
         root.Controls.Add(shell, 0, 1);
-        Controls.Add(root);
+        DialogContent.Controls.Add(root);
+
+        Shown += (_, _) => ApplyOwnerBoundedSize();
+        Resize += (_, _) => UiGeometry.ApplyRoundedRegion(this, 18);
 
         LoadProcesses();
     }
@@ -328,6 +324,7 @@ public class TopProcessesForm : Form
         }
 
         _listView.EndUpdate();
+        AdjustListViewColumns();
         if (_listView.Items.Count > 0)
             _listView.Items[0].Selected = true;
     }
@@ -544,5 +541,74 @@ public class TopProcessesForm : Form
             Rectangle.Inflate(bounds, -6, 0),
             foreColor,
             flags);
+    }
+
+    private void ApplyOwnerBoundedSize()
+    {
+        var preferredSize = new Size(632, 612);
+        var minimumSize = new Size(600, 560);
+        var boundedSize = CalculateBoundedSize(preferredSize, minimumSize);
+
+        ClientSize = boundedSize;
+        MinimumSize = boundedSize;
+        MaximumSize = boundedSize;
+        CenterToOwnerContent(boundedSize);
+        UiGeometry.ApplyRoundedRegion(this, 18);
+        AdjustListViewColumns();
+    }
+
+    private Size CalculateBoundedSize(Size preferredSize, Size minimumSize)
+    {
+        var referenceControl = Owner as Control ?? this;
+        var workingArea = Screen.FromControl(referenceControl).WorkingArea;
+        var ownerClientSize = Owner?.ClientSize ?? Size.Empty;
+
+        var maxWidth = ownerClientSize.Width > 0
+            ? Math.Min(ownerClientSize.Width - 24, workingArea.Width - 60)
+            : workingArea.Width - 60;
+        var maxHeight = ownerClientSize.Height > 0
+            ? Math.Min(ownerClientSize.Height - 30, workingArea.Height - 60)
+            : workingArea.Height - 60;
+
+        maxWidth = Math.Max(minimumSize.Width, maxWidth);
+        maxHeight = Math.Max(minimumSize.Height, maxHeight);
+
+        return new Size(
+            Math.Min(preferredSize.Width, maxWidth),
+            Math.Min(preferredSize.Height, maxHeight));
+    }
+
+    private void CenterToOwnerContent(Size boundedSize)
+    {
+        if (Owner is null)
+            return;
+
+        var ownerCenter = Owner.PointToScreen(new Point(Owner.ClientSize.Width / 2, Owner.ClientSize.Height / 2));
+        var targetLeft = ownerCenter.X - (boundedSize.Width / 2);
+        var targetTop = ownerCenter.Y - (boundedSize.Height / 2) + 8;
+        var workingArea = Screen.FromControl(Owner).WorkingArea;
+
+        Location = new Point(
+            Math.Max(workingArea.Left, Math.Min(targetLeft, workingArea.Right - Width)),
+            Math.Max(workingArea.Top, Math.Min(targetTop, workingArea.Bottom - Height)));
+    }
+
+    private void AdjustListViewColumns()
+    {
+        if (_listView.ClientSize.Width <= 0 || _listView.Columns.Count < 5)
+            return;
+
+        var availableWidth = Math.Max(420, _listView.ClientSize.Width - SystemInformation.VerticalScrollBarWidth - 4);
+        var rankWidth = 58;
+        var ramWidth = 94;
+        var cpuWidth = 82;
+        var diskWidth = 112;
+        var processWidth = Math.Max(150, availableWidth - rankWidth - ramWidth - cpuWidth - diskWidth);
+
+        _listView.Columns[0].Width = rankWidth;
+        _listView.Columns[1].Width = processWidth;
+        _listView.Columns[2].Width = ramWidth;
+        _listView.Columns[3].Width = cpuWidth;
+        _listView.Columns[4].Width = diskWidth;
     }
 }

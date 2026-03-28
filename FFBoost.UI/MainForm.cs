@@ -279,7 +279,13 @@ public class MainForm : Form
             Dock = DockStyle.Fill,
             Padding = new Padding(16, 10, 16, 16),
             BorderGlowLeft = Color.FromArgb(40, 88, 255),
-            BorderGlowRight = Color.FromArgb(255, 102, 68)
+            BorderGlowRight = Color.FromArgb(255, 102, 68),
+            UseCutCorners = true,
+            ShowCornerNotches = true,
+            CutTopLeft = 10,
+            CutTopRight = 24,
+            CutBottomRight = 18,
+            CutBottomLeft = 24
         };
 
         var topBar = BuildTopBar(btnAbout, btnAutoProfile, btnClearLog);
@@ -332,6 +338,7 @@ public class MainForm : Form
         (_trayIcon, _trayStartupItem, _trayFreeFireItem, _trayTurboItem) = BuildTrayIcon();
         _dashboardTimer = new System.Windows.Forms.Timer { Interval = 1200 };
         _dashboardTimer.Tick += (_, _) => RefreshLiveMetrics();
+        HandleCreated += (_, _) => WindowEffects.ApplyPreferredWindowChrome(Handle, preferRoundedCorners: false);
         Shown += MainForm_Shown;
         Resize += MainForm_Resize;
         FormClosing += MainForm_FormClosing;
@@ -1594,10 +1601,34 @@ public class MainForm : Form
 internal sealed class SciFiPanel : Panel
 {
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+    public int CornerRadius { get; set; } = 22;
+
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+    public bool UseCutCorners { get; set; }
+
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+    public int CutCornerSize { get; set; } = 16;
+
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+    public int CutTopLeft { get; set; } = -1;
+
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+    public int CutTopRight { get; set; } = -1;
+
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+    public int CutBottomRight { get; set; } = -1;
+
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+    public int CutBottomLeft { get; set; } = -1;
+
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
     public Color BorderGlowLeft { get; set; } = Color.FromArgb(40, 88, 255);
 
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
     public Color BorderGlowRight { get; set; } = Color.FromArgb(255, 102, 68);
+
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+    public bool ShowCornerNotches { get; set; }
 
     protected override void OnPaintBackground(PaintEventArgs e)
     {
@@ -1605,15 +1636,29 @@ internal sealed class SciFiPanel : Panel
             return;
 
         e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+        using var backgroundPath = CreateChromePath(ClientRectangle);
+        var graphicsState = e.Graphics.Save();
+        e.Graphics.SetClip(backgroundPath);
 
         using var bg = new LinearGradientBrush(ClientRectangle, Color.FromArgb(4, 8, 18), Color.FromArgb(10, 8, 24), LinearGradientMode.Vertical);
-        e.Graphics.FillRectangle(bg, ClientRectangle);
+        e.Graphics.FillPath(bg, backgroundPath);
 
         DrawGlow(e.Graphics, new Rectangle(-120, 120, 380, 380), Color.FromArgb(80, 0, 136, 255));
         DrawGlow(e.Graphics, new Rectangle(Width - 330, 50, 340, 340), Color.FromArgb(75, 255, 88, 32));
         DrawGlow(e.Graphics, new Rectangle(Width / 2 - 170, 180, 340, 180), Color.FromArgb(42, 255, 126, 0));
+        e.Graphics.Restore(graphicsState);
         DrawBorder(e.Graphics);
+        DrawCornerNotches(e.Graphics);
         DrawParticles(e.Graphics);
+    }
+
+    protected override void OnResize(EventArgs eventargs)
+    {
+        base.OnResize(eventargs);
+        if (UseCutCorners)
+            UiGeometry.ApplyCutCornerRegion(this, ResolveCutCorners());
+        else
+            UiGeometry.ApplyRoundedRegion(this, CornerRadius);
     }
 
     private void DrawBorder(Graphics graphics)
@@ -1623,10 +1668,82 @@ internal sealed class SciFiPanel : Panel
 
         using var leftPen = new Pen(BorderGlowLeft, 2F);
         using var rightPen = new Pen(BorderGlowRight, 2F);
-        graphics.DrawLine(leftPen, 0, 0, 0, Height - 1);
-        graphics.DrawLine(leftPen, 0, Height - 2, Width / 2, Height - 2);
-        graphics.DrawLine(rightPen, Width - 1, 0, Width - 1, Height - 1);
-        graphics.DrawLine(rightPen, Width / 2, Height - 2, Width - 1, Height - 2);
+        using var borderPath = CreateChromePath(new Rectangle(0, 0, Math.Max(0, Width - 1), Math.Max(0, Height - 1)));
+        graphics.DrawPath(leftPen, borderPath);
+
+        var clipState = graphics.Save();
+        graphics.SetClip(new Rectangle(Width / 2, 0, Math.Max(0, Width / 2), Height));
+        graphics.DrawPath(rightPen, borderPath);
+        graphics.Restore(clipState);
+    }
+
+    private void DrawCornerNotches(Graphics graphics)
+    {
+        if (!ShowCornerNotches || Width < 120 || Height < 120)
+            return;
+
+        graphics.SmoothingMode = SmoothingMode.AntiAlias;
+
+        using var blueGlow = new Pen(Color.FromArgb(150, 86, 214, 255), 3.2F)
+        {
+            StartCap = LineCap.Round,
+            EndCap = LineCap.Round
+        };
+        using var blueCore = new Pen(Color.FromArgb(180, 128, 232, 255), 1.2F)
+        {
+            StartCap = LineCap.Round,
+            EndCap = LineCap.Round
+        };
+        using var orangeGlow = new Pen(Color.FromArgb(150, 255, 122, 72), 3.2F)
+        {
+            StartCap = LineCap.Round,
+            EndCap = LineCap.Round
+        };
+        using var orangeCore = new Pen(Color.FromArgb(200, 255, 162, 110), 1.2F)
+        {
+            StartCap = LineCap.Round,
+            EndCap = LineCap.Round
+        };
+
+        var topRight = new[]
+        {
+            new Point(Width - 92, 12),
+            new Point(Width - 44, 12),
+            new Point(Width - 24, 32)
+        };
+        graphics.DrawLines(blueGlow, topRight);
+        graphics.DrawLines(blueCore, topRight);
+
+        var bottomLeft = new[]
+        {
+            new Point(18, Height - 42),
+            new Point(18, Height - 18),
+            new Point(42, Height - 18)
+        };
+        graphics.DrawLines(orangeGlow, bottomLeft);
+        graphics.DrawLines(orangeCore, bottomLeft);
+
+        using var blueDot = new SolidBrush(Color.FromArgb(210, 118, 224, 255));
+        using var orangeDot = new SolidBrush(Color.FromArgb(210, 255, 150, 102));
+        graphics.FillEllipse(blueDot, Width - 98, 9, 6, 6);
+        graphics.FillEllipse(orangeDot, 15, Height - 24, 6, 6);
+    }
+
+    private GraphicsPath CreateChromePath(Rectangle bounds)
+    {
+        return UseCutCorners
+            ? UiGeometry.CreateCutCornerPath(bounds, ResolveCutCorners())
+            : UiGeometry.CreateRoundedPath(bounds, CornerRadius);
+    }
+
+    private UiCutCorners ResolveCutCorners()
+    {
+        var fallback = CutCornerSize;
+        return new UiCutCorners(
+            CutTopLeft >= 0 ? CutTopLeft : fallback,
+            CutTopRight >= 0 ? CutTopRight : fallback,
+            CutBottomRight >= 0 ? CutBottomRight : fallback,
+            CutBottomLeft >= 0 ? CutBottomLeft : fallback);
     }
 
     private static void DrawGlow(Graphics graphics, Rectangle bounds, Color color)
@@ -1658,6 +1775,9 @@ internal sealed class SciFiPanel : Panel
 internal sealed class NeonPanel : Panel
 {
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+    public int CornerRadius { get; set; } = 18;
+
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
     public Color BorderColor { get; set; } = Color.FromArgb(70, 180, 255);
 
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
@@ -1686,12 +1806,20 @@ internal sealed class NeonPanel : Panel
             return;
 
         using var fill = new LinearGradientBrush(ClientRectangle, FillTop, FillBottom, LinearGradientMode.Vertical);
-        e.Graphics.FillRectangle(fill, outer);
+        using var outerPath = UiGeometry.CreateRoundedPath(outer, CornerRadius);
+        using var innerPath = UiGeometry.CreateRoundedPath(new Rectangle(1, 1, Math.Max(0, Width - 3), Math.Max(0, Height - 3)), Math.Max(0, CornerRadius - 1));
+        e.Graphics.FillPath(fill, outerPath);
 
         using var glowPen = new Pen(Color.FromArgb(72, GlowColor), 3F);
         using var borderPen = new Pen(BorderColor, 1.2F);
-        e.Graphics.DrawRectangle(glowPen, 1, 1, Math.Max(0, Width - 3), Math.Max(0, Height - 3));
-        e.Graphics.DrawRectangle(borderPen, 0, 0, Math.Max(0, Width - 1), Math.Max(0, Height - 1));
+        e.Graphics.DrawPath(glowPen, innerPath);
+        e.Graphics.DrawPath(borderPen, outerPath);
+    }
+
+    protected override void OnResize(EventArgs eventargs)
+    {
+        base.OnResize(eventargs);
+        UiGeometry.ApplyRoundedRegion(this, CornerRadius);
     }
 }
 
@@ -1743,7 +1871,8 @@ internal sealed class RamPulseButton : Control
             Color.FromArgb(9, 12, 26),
             Color.FromArgb(5, 8, 20),
             LinearGradientMode.Vertical);
-        pevent.Graphics.FillRectangle(fill, ClientRectangle);
+        using var backgroundPath = UiGeometry.CreateRoundedPath(ClientRectangle, 18);
+        pevent.Graphics.FillPath(fill, backgroundPath);
     }
 
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
@@ -1847,6 +1976,7 @@ internal sealed class RamPulseButton : Control
         }
 
         var cardBounds = new Rectangle(6, 2, Math.Max(0, Width - 12), Math.Max(0, Height - 4));
+        using var cardPath = UiGeometry.CreateRoundedPath(cardBounds, 16);
         using var cardGlow = new Pen(Color.FromArgb(36, AccentColor), 1.2F);
         using var fillBrush = new SolidBrush(Color.FromArgb(18, 24, 38));
         using var shadowBrush = new SolidBrush(Color.FromArgb(_hovered ? 58 : 34, AccentColor));
@@ -1854,7 +1984,7 @@ internal sealed class RamPulseButton : Control
         using var accentPen = new Pen(AccentColor, 4.6F) { StartCap = LineCap.Round, EndCap = LineCap.Round };
         using var glowPen = new Pen(Color.FromArgb(80, AccentColor), 9F) { StartCap = LineCap.Round, EndCap = LineCap.Round };
 
-        e.Graphics.DrawRectangle(cardGlow, cardBounds);
+        e.Graphics.DrawPath(cardGlow, cardPath);
         e.Graphics.FillEllipse(shadowBrush, Rectangle.Inflate(ringBounds, 4, 4));
         e.Graphics.FillEllipse(fillBrush, ringBounds);
         e.Graphics.DrawArc(ringPen, ringBounds, -90, 360);
@@ -1927,7 +2057,111 @@ internal sealed class RamPulseButton : Control
         subtitleFont.Dispose();
         footerFont.Dispose();
     }
+
+    protected override void OnResize(EventArgs e)
+    {
+        base.OnResize(e);
+        UiGeometry.ApplyRoundedRegion(this, 18);
+    }
 }
+
+internal static class UiGeometry
+{
+    public static GraphicsPath CreateRoundedPath(Rectangle bounds, int radius)
+    {
+        var path = new GraphicsPath();
+        if (bounds.Width <= 0 || bounds.Height <= 0)
+            return path;
+
+        radius = Math.Max(0, Math.Min(radius, Math.Min(bounds.Width, bounds.Height) / 2));
+        if (radius == 0)
+        {
+            path.AddRectangle(bounds);
+            path.CloseFigure();
+            return path;
+        }
+
+        var diameter = radius * 2;
+        var arc = new Rectangle(bounds.Location, new Size(diameter, diameter));
+
+        path.AddArc(arc, 180, 90);
+        arc.X = bounds.Right - diameter;
+        path.AddArc(arc, 270, 90);
+        arc.Y = bounds.Bottom - diameter;
+        path.AddArc(arc, 0, 90);
+        arc.X = bounds.Left;
+        path.AddArc(arc, 90, 90);
+        path.CloseFigure();
+        return path;
+    }
+
+    public static GraphicsPath CreateCutCornerPath(Rectangle bounds, int cutSize)
+    {
+        return CreateCutCornerPath(bounds, new UiCutCorners(cutSize, cutSize, cutSize, cutSize));
+    }
+
+    public static GraphicsPath CreateCutCornerPath(Rectangle bounds, UiCutCorners corners)
+    {
+        var path = new GraphicsPath();
+        if (bounds.Width <= 0 || bounds.Height <= 0)
+            return path;
+
+        var maxCut = Math.Min(bounds.Width, bounds.Height) / 2;
+        var topLeft = Math.Max(0, Math.Min(corners.TopLeft, maxCut));
+        var topRight = Math.Max(0, Math.Min(corners.TopRight, maxCut));
+        var bottomRight = Math.Max(0, Math.Min(corners.BottomRight, maxCut));
+        var bottomLeft = Math.Max(0, Math.Min(corners.BottomLeft, maxCut));
+
+        if (topLeft == 0 && topRight == 0 && bottomRight == 0 && bottomLeft == 0)
+        {
+            path.AddRectangle(bounds);
+            path.CloseFigure();
+            return path;
+        }
+
+        path.AddLine(bounds.Left + topLeft, bounds.Top, bounds.Right - topRight, bounds.Top);
+        path.AddLine(bounds.Right - topRight, bounds.Top, bounds.Right, bounds.Top + topRight);
+        path.AddLine(bounds.Right, bounds.Top + topRight, bounds.Right, bounds.Bottom - bottomRight);
+        path.AddLine(bounds.Right, bounds.Bottom - bottomRight, bounds.Right - bottomRight, bounds.Bottom);
+        path.AddLine(bounds.Right - bottomRight, bounds.Bottom, bounds.Left + bottomLeft, bounds.Bottom);
+        path.AddLine(bounds.Left + bottomLeft, bounds.Bottom, bounds.Left, bounds.Bottom - bottomLeft);
+        path.AddLine(bounds.Left, bounds.Bottom - bottomLeft, bounds.Left, bounds.Top + topLeft);
+        path.AddLine(bounds.Left, bounds.Top + topLeft, bounds.Left + topLeft, bounds.Top);
+        path.CloseFigure();
+        return path;
+    }
+
+    public static void ApplyRoundedRegion(Control control, int radius)
+    {
+        if (control.Width <= 0 || control.Height <= 0)
+            return;
+
+        using var path = CreateRoundedPath(new Rectangle(Point.Empty, control.Size), radius);
+        var nextRegion = new Region(path);
+        var previousRegion = control.Region;
+        control.Region = nextRegion;
+        previousRegion?.Dispose();
+    }
+
+    public static void ApplyCutCornerRegion(Control control, int cutSize)
+    {
+        ApplyCutCornerRegion(control, new UiCutCorners(cutSize, cutSize, cutSize, cutSize));
+    }
+
+    public static void ApplyCutCornerRegion(Control control, UiCutCorners corners)
+    {
+        if (control.Width <= 0 || control.Height <= 0)
+            return;
+
+        using var path = CreateCutCornerPath(new Rectangle(Point.Empty, control.Size), corners);
+        var nextRegion = new Region(path);
+        var previousRegion = control.Region;
+        control.Region = nextRegion;
+        previousRegion?.Dispose();
+    }
+}
+
+internal readonly record struct UiCutCorners(int TopLeft, int TopRight, int BottomRight, int BottomLeft);
 
 internal sealed class GamerMenuRenderer : ToolStripProfessionalRenderer
 {

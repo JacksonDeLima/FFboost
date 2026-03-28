@@ -2,22 +2,14 @@ using FFBoost.Core.Models;
 
 namespace FFBoost.UI;
 
-public class OptimizationSummaryForm : Form
+public class OptimizationSummaryForm : ThemedDialogForm
 {
     private const string SignatureText = "\u6587\uFF29\uFF4C\uFF55\uFF53\uFF49\uFF4F\uFF4E";
 
-    public OptimizationSummaryForm(OptimizationResult result)
+    public OptimizationSummaryForm(OptimizationResult result) : base("Resumo da Otimizacao", result.Success ? Color.FromArgb(0, 224, 255) : Color.FromArgb(255, 120, 120))
     {
-        Text = "Resumo da Otimizacao";
-        StartPosition = FormStartPosition.CenterParent;
-        FormBorderStyle = FormBorderStyle.FixedDialog;
-        MaximizeBox = false;
-        MinimizeBox = false;
-        ShowInTaskbar = false;
         ClientSize = new Size(500, 420);
         BackColor = Color.FromArgb(9, 13, 24);
-        ForeColor = Color.White;
-        Font = new Font("Segoe UI", 10F, FontStyle.Regular, GraphicsUnit.Point);
 
         var titleLabel = new Label
         {
@@ -93,11 +85,11 @@ public class OptimizationSummaryForm : Form
         };
         contentHost.Controls.Add(summaryLabel);
 
-        Controls.Add(contentHost);
-        Controls.Add(buttonHost);
-        Controls.Add(signatureLabel);
-        Controls.Add(headerSignatureLabel);
-        Controls.Add(titleLabel);
+        DialogContent.Controls.Add(contentHost);
+        DialogContent.Controls.Add(buttonHost);
+        DialogContent.Controls.Add(signatureLabel);
+        DialogContent.Controls.Add(headerSignatureLabel);
+        DialogContent.Controls.Add(titleLabel);
     }
 
     private static string BuildDetailText(OptimizationResult result)

@@ -12,7 +12,8 @@ public class TechnicalReportForm : Form
         MaximizeBox = false;
         MinimizeBox = false;
         ShowInTaskbar = false;
-        ClientSize = new Size(820, 760);
+        ClientSize = new Size(632, 612);
+        MinimumSize = new Size(632, 612);
         BackColor = Color.FromArgb(4, 8, 18);
         ForeColor = Color.White;
         Font = new Font("Segoe UI", 10F, FontStyle.Regular, GraphicsUnit.Point);
@@ -131,6 +132,8 @@ public class TechnicalReportForm : Form
         root.Controls.Add(topBar, 0, 0);
         root.Controls.Add(shell, 0, 1);
         Controls.Add(root);
+
+        Shown += (_, _) => ApplyOwnerBoundedSize();
     }
 
     private static Panel BuildTopBar()
@@ -225,5 +228,53 @@ public class TechnicalReportForm : Form
     private static string YesNo(bool value)
     {
         return value ? "sim" : "nao";
+    }
+
+    private void ApplyOwnerBoundedSize()
+    {
+        var preferredSize = new Size(632, 612);
+        var minimumSize = new Size(600, 560);
+        var boundedSize = CalculateBoundedSize(preferredSize, minimumSize);
+
+        ClientSize = boundedSize;
+        MinimumSize = boundedSize;
+        MaximumSize = boundedSize;
+        CenterToOwnerContent(boundedSize);
+    }
+
+    private Size CalculateBoundedSize(Size preferredSize, Size minimumSize)
+    {
+        var referenceControl = Owner as Control ?? this;
+        var workingArea = Screen.FromControl(referenceControl).WorkingArea;
+        var ownerClientSize = Owner?.ClientSize ?? Size.Empty;
+
+        var maxWidth = ownerClientSize.Width > 0
+            ? Math.Min(ownerClientSize.Width - 24, workingArea.Width - 60)
+            : workingArea.Width - 60;
+        var maxHeight = ownerClientSize.Height > 0
+            ? Math.Min(ownerClientSize.Height - 30, workingArea.Height - 60)
+            : workingArea.Height - 60;
+
+        maxWidth = Math.Max(minimumSize.Width, maxWidth);
+        maxHeight = Math.Max(minimumSize.Height, maxHeight);
+
+        return new Size(
+            Math.Min(preferredSize.Width, maxWidth),
+            Math.Min(preferredSize.Height, maxHeight));
+    }
+
+    private void CenterToOwnerContent(Size boundedSize)
+    {
+        if (Owner is null)
+            return;
+
+        var ownerCenter = Owner.PointToScreen(new Point(Owner.ClientSize.Width / 2, Owner.ClientSize.Height / 2));
+        var targetLeft = ownerCenter.X - (boundedSize.Width / 2);
+        var targetTop = ownerCenter.Y - (boundedSize.Height / 2) + 8;
+        var workingArea = Screen.FromControl(Owner).WorkingArea;
+
+        Location = new Point(
+            Math.Max(workingArea.Left, Math.Min(targetLeft, workingArea.Right - Width)),
+            Math.Max(workingArea.Top, Math.Min(targetTop, workingArea.Bottom - Height)));
     }
 }
